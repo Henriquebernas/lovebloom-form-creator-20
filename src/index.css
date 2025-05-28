@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,47 +36,43 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Custom LoveBloom colors */
+    --neon-pink: #ff007f;
+    --soft-pink-glow: rgba(255, 0, 127, 0.4);
+    --dark-bg: #0f0f1a;
+    --element-bg: #1a1a2e;
+    --element-bg-lighter: #2a2a3e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0c0;
+    --border-color: rgba(255, 0, 127, 0.3);
+    --border-color-focus: var(--neon-pink);
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
-
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
@@ -96,6 +93,145 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+  }
+}
+
+@layer utilities {
+  .playfair-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .text-neon-pink {
+    color: var(--neon-pink);
+  }
+
+  .text-text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .bg-dark-bg {
+    background-color: var(--dark-bg);
+  }
+
+  .bg-element-bg {
+    background-color: var(--element-bg);
+  }
+
+  .bg-element-bg-lighter {
+    background-color: var(--element-bg-lighter);
+  }
+
+  .border-border-color {
+    border-color: var(--border-color);
+  }
+
+  .custom-shadow {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2), 0 0 5px rgba(255,0,127,0.1), 0 0 0 1px rgba(255,0,127,0.1);
+  }
+
+  .btn-primary {
+    background-color: var(--neon-pink);
+    color: white;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 0 10px var(--soft-pink-glow), 0 0 20px var(--soft-pink-glow);
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background-color: #e0006f;
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px var(--soft-pink-glow), 0 0 30px var(--soft-pink-glow);
+  }
+
+  .btn-secondary {
+    background-color: var(--element-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--element-bg-lighter);
+    border-color: var(--neon-pink);
+  }
+
+  .input-field {
+    background-color: var(--element-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+  }
+
+  .input-field:focus {
+    border-color: var(--border-color-focus);
+    box-shadow: 0 0 0 0.2rem rgba(255, 0, 127, 0.25);
+    outline: none;
+  }
+
+  .plan-card {
+    background-color: var(--element-bg);
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .plan-card.selected {
+    border-color: var(--neon-pink);
+    background-color: var(--element-bg-lighter);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(255,0,127,0.1);
+  }
+
+  .plan-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--neon-pink);
+    box-shadow: 0 6px 10px rgba(255,0,127,0.08);
+  }
+
+  .preview-card {
+    background-color: var(--element-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  .preview-header {
+    background-color: var(--neon-pink);
+  }
+
+  .preview-countdown-bg {
+    background-color: rgba(255, 0, 127, 0.1);
+  }
+
+  /* Modal styles */
+  .modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
+  }
+
+  .modal-content {
+    background-color: var(--element-bg);
+    color: var(--text-primary);
+    margin: 15% auto;
+    padding: 25px;
+    border: 1px solid var(--neon-pink);
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 0 20px var(--soft-pink-glow);
+  }
+
+  /* Date and time picker styling */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.7) sepia(1) hue-rotate(300deg) saturate(5);
   }
 }
