@@ -1,6 +1,6 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface FormData {
   coupleName: string;
@@ -12,6 +12,8 @@ interface FormData {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState<FormData>({
     coupleName: '',
     startDate: '',
@@ -144,11 +146,15 @@ const Index = () => {
       return;
     }
     
-    setModalContent({ 
-      title: 'Sucesso!', 
-      message: `Seu site para ${formData.coupleName} foi "criado" com o plano ${formData.selectedPlan}! (Isso é uma demonstração)` 
+    navigate('/counter', {
+      state: {
+        coupleName: formData.coupleName,
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        message: formData.message,
+        photoUrl: photoPreview !== 'https://placehold.co/200x200/374151/e0e0e0?text=Foto+Casal' ? photoPreview : "https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"
+      }
     });
-    setShowModal(true);
   };
 
   return (
