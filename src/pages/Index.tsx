@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, X, Music } from 'lucide-react';
+import { Upload, X, Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface FormData {
@@ -155,7 +155,7 @@ const Index = () => {
       
       years = Math.max(0, years);
 
-      setCountdown(`${years} anos, ${months} meses, ${days} dias<br>${hours} horas, ${minutes} minutos, ${seconds} segundos`);
+      setCountdown(`${years} anos, ${months} meses, ${days} dias<br>${hours} horas, ${minutes} minutos e ${seconds} segundos`);
     }, 1000);
   };
 
@@ -295,7 +295,7 @@ const Index = () => {
                     onClick={() => handlePlanSelect('basic')}
                   >
                     <h3 className="font-semibold text-lg text-white">Memórias</h3>
-                    <p className="text-sm text-text-secondary">1 ano, até 2 fotos, sem música</p>
+                    <p className="text-sm text-text-secondary">1 ano, até 2 fotos, sem vídeo</p>
                     <p className="font-bold text-xl text-neon-pink mt-1">R$29</p>
                   </div>
                   <div
@@ -303,20 +303,20 @@ const Index = () => {
                     onClick={() => handlePlanSelect('premium')}
                   >
                     <h3 className="font-semibold text-lg text-white">Eternidade</h3>
-                    <p className="text-sm text-text-secondary">Para sempre, até 5 fotos, com música</p>
+                    <p className="text-sm text-text-secondary">Para sempre, até 5 fotos, com vídeo de fundo</p>
                     <p className="font-bold text-xl text-neon-pink mt-1">R$40</p>
                   </div>
                 </div>
               </div>
 
-              {/* Music URL - Only shown for premium plan */}
+              {/* Video URL - Only shown for premium plan */}
               {formData.selectedPlan === 'premium' && (
                 <div>
                   <label htmlFor="musicUrl" className="block text-sm font-medium text-text-secondary mb-1">
-                    Link da Música (opcional)
+                    Link do Vídeo YouTube (opcional)
                   </label>
                   <div className="relative">
-                    <Music className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-secondary" />
+                    <Video className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-secondary" />
                     <input
                       type="url"
                       id="musicUrl"
@@ -327,7 +327,7 @@ const Index = () => {
                       placeholder="https://www.youtube.com/watch?v=..."
                     />
                   </div>
-                  <p className="text-xs text-text-secondary mt-1">Cole o link do YouTube, Spotify ou outro serviço de música</p>
+                  <p className="text-xs text-text-secondary mt-1">Cole o link do YouTube que será reproduzido como fundo do contador</p>
                 </div>
               )}
 
@@ -441,8 +441,8 @@ const Index = () => {
                 
                 {formData.selectedPlan === 'premium' && formData.musicUrl && (
                   <div className="flex items-center justify-center text-xs text-text-secondary mb-2">
-                    <Music className="h-3 w-3 mr-1" />
-                    <span>Com música de fundo</span>
+                    <Video className="h-3 w-3 mr-1" />
+                    <span>Com vídeo de fundo</span>
                   </div>
                 )}
                 

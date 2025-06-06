@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Music, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { extractYouTubeVideoId, createYouTubeEmbedUrl } from '../utils/youtubeUtils';
 
 const Counter = () => {
   const location = useLocation();
@@ -9,9 +9,9 @@ const Counter = () => {
   
   const [countdown, setCountdown] = useState<string>('Calculando...');
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   // Dados de exemplo ou do estado passado
   const data = state || {
@@ -24,6 +24,8 @@ const Counter = () => {
   };
 
   const photos = data.photoUrls || ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"];
+  const videoId = extractYouTubeVideoId(data.musicUrl);
+  const embedUrl = videoId ? createYouTubeEmbedUrl(videoId) : null;
 
   const nextPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
@@ -33,14 +35,15 @@ const Counter = () => {
     setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
   };
 
-  const toggleMusic = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+  const toggleMute = () => {
+    if (iframeRef.current) {
+      // Send message to iframe to toggle mute
+      const action = isMuted ? 'unMute' : 'mute';
+      iframeRef.current.contentWindow?.postMessage(
+        `{"event":"command","func":"${action}","args":""}`,
+        '*'
+      );
+      setIsMuted(!isMuted);
     }
   };
 
@@ -114,33 +117,53 @@ const Counter = () => {
   }, [photos.length]);
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-5 overflow-x-hidden">
-      <header className="absolute top-0 left-0 right-0 p-4 text-center z-10">
-        <Link to="/" className="text-2xl playfair-display font-bold text-white">
+    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-5 overflow-x-hidden relative">
+      {/* YouTube Video Background */}
+      {embedUrl && (
+        <>
+          <div className="fixed inset-0 w-full h-full z-0">
+            <iframe
+              ref={iframeRef}
+              src={embedUrl}
+              className="w-full h-full object-cover"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: '100vw',
+                height: '56.25vw', // 16:9 aspect ratio
+                minHeight: '100vh',
+                minWidth: '177.77vh', // 16:9 aspect ratio
+                transform: 'translate(-50%, -50%)',
+              }}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+          
+          {/* Dark overlay for readability */}
+          <div className="fixed inset-0 bg-black bg-opacity-40 z-10"></div>
+        </>
+      )}
+
+      <header className="absolute top-0 left-0 right-0 p-4 text-center z-20">
+        <Link to="/" className="text-2xl playfair-display font-bold text-white drop-shadow-lg">
           Love<span className="text-neon-pink">Bloom</span>
         </Link>
       </header>
 
-      {/* Music Controls */}
-      {data.musicUrl && (
-        <>
-          <audio 
-            ref={audioRef}
-            src={data.musicUrl}
-            loop
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-          />
-          <button
-            onClick={toggleMusic}
-            className="absolute top-4 right-4 z-20 bg-element-bg p-3 rounded-full shadow-lg text-neon-pink hover:bg-element-bg-lighter transition-colors"
-          >
-            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          </button>
-        </>
+      {/* Volume Controls */}
+      {embedUrl && (
+        <button
+          onClick={toggleMute}
+          className="absolute top-4 right-4 z-30 bg-black bg-opacity-50 p-3 rounded-full shadow-lg text-white hover:bg-opacity-70 transition-colors"
+        >
+          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        </button>
       )}
 
-      <div className="counter-main-container bg-element-bg p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative">
+      <div className="counter-main-container bg-element-bg bg-opacity-90 p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative z-20">
         {/* Floating Hearts */}
         <span className="floating-heart absolute opacity-0 pointer-events-none text-neon-pink" style={{
           top: '8%', 
@@ -231,14 +254,6 @@ const Counter = () => {
         <div className="text-sm text-text-secondary mt-4 pt-2 border-t border-opacity-20" style={{ borderColor: '#ff007f' }}>
           <p>{data.message}</p>
         </div>
-
-        {/* Music indicator */}
-        {data.musicUrl && (
-          <div className="flex items-center justify-center mt-3 text-xs text-text-secondary">
-            <Music className="h-3 w-3 mr-1" />
-            <span>Música de fundo {isPlaying ? 'tocando' : 'pausada'}</span>
-          </div>
-        )}
       </div>
 
       <style>{`
