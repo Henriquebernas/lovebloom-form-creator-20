@@ -241,7 +241,7 @@ const Counter = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes floatHeart {
           0%, 100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0; }
           10%, 90% { opacity: 0.7; }
