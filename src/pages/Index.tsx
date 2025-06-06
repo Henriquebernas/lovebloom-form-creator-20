@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, X, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface FormData {
@@ -8,7 +8,8 @@ interface FormData {
   startTime: string;
   message: string;
   selectedPlan: string;
-  couplePhoto: File | null;
+  couplePhotos: File[];
+  musicUrl: string;
 }
 
 const Index = () => {
@@ -20,16 +21,20 @@ const Index = () => {
     startTime: '',
     message: '',
     selectedPlan: '',
-    couplePhoto: null,
+    couplePhotos: [],
+    musicUrl: '',
   });
 
-  const [photoPreview, setPhotoPreview] = useState<string>('https://placehold.co/200x200/374151/e0e0e0?text=Foto+Casal');
-  const [fileName, setFileName] = useState<string>('');
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<string>('0 anos, 0 meses, 0 dias<br>0 horas, 0 minutos, 0 segundos');
   const [showModal, setShowModal] = useState<boolean>(false);
   const [modalContent, setModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const getPhotoLimit = () => {
+    return formData.selectedPlan === 'basic' ? 2 : formData.selectedPlan === 'premium' ? 5 : 0;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -37,24 +42,68 @@ const Index = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPhotoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-      setFormData(prev => ({ ...prev, couplePhoto: file }));
-      setFileName(file.name);
-    } else {
-      setPhotoPreview('https://placehold.co/200x200/374151/e0e0e0?text=Foto+Casal');
-      setFormData(prev => ({ ...prev, couplePhoto: null }));
-      setFileName('');
+    const files = Array.from(e.target.files || []);
+    const photoLimit = getPhotoLimit();
+    
+    if (!photoLimit) {
+      setModalContent({ title: 'Ops!', message: 'Por favor, escolha um plano primeiro.' });
+      setShowModal(true);
+      return;
     }
+
+    const currentPhotos = formData.couplePhotos;
+    const newPhotos = [...currentPhotos, ...files].slice(0, photoLimit);
+    
+    if (files.length > photoLimit - currentPhotos.length) {
+      setModalContent({ 
+        title: 'Limite de fotos', 
+        message: `Você pode adicionar no máximo ${photoLimit} fotos com este plano.` 
+      });
+      setShowModal(true);
+    }
+
+    setFormData(prev => ({ ...prev, couplePhotos: newPhotos }));
+    
+    const newPreviews = newPhotos.map(file => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      return new Promise<string>((resolve) => {
+        reader.onload = (e) => resolve(e.target?.result as string);
+      });
+    });
+
+    Promise.all(newPreviews).then(previews => {
+      setPhotoPreviews(previews);
+    });
+
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const removePhoto = (index: number) => {
+    const newPhotos = formData.couplePhotos.filter((_, i) => i !== index);
+    const newPreviews = photoPreviews.filter((_, i) => i !== index);
+    
+    setFormData(prev => ({ ...prev, couplePhotos: newPhotos }));
+    setPhotoPreviews(newPreviews);
   };
 
   const handlePlanSelect = (plan: string) => {
-    setFormData(prev => ({ ...prev, selectedPlan: plan }));
+    setFormData(prev => ({ 
+      ...prev, 
+      selectedPlan: plan,
+      // Clear music URL if switching to basic plan
+      musicUrl: plan === 'basic' ? '' : prev.musicUrl
+    }));
+    
+    // If switching to a plan with fewer photos, trim the photos array
+    const newLimit = plan === 'basic' ? 2 : plan === 'premium' ? 5 : 0;
+    if (formData.couplePhotos.length > newLimit) {
+      const trimmedPhotos = formData.couplePhotos.slice(0, newLimit);
+      const trimmedPreviews = photoPreviews.slice(0, newLimit);
+      setFormData(prev => ({ ...prev, couplePhotos: trimmedPhotos }));
+      setPhotoPreviews(trimmedPreviews);
+    }
   };
 
   const calculateCountdown = () => {
@@ -152,7 +201,8 @@ const Index = () => {
         startDate: formData.startDate,
         startTime: formData.startTime,
         message: formData.message,
-        photoUrl: photoPreview !== 'https://placehold.co/200x200/374151/e0e0e0?text=Foto+Casal' ? photoPreview : "https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"
+        photoUrls: photoPreviews.length > 0 ? photoPreviews : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"],
+        musicUrl: formData.musicUrl
       }
     });
   };
@@ -186,7 +236,7 @@ const Index = () => {
                   value={formData.coupleName}
                   onChange={handleInputChange}
                   className="w-full p-3 input-field"
-                  placeholder="Ex: João & Maria"
+                  placeholder="Ex: João & Maria (Não use emoji)"
                 />
               </div>
 
@@ -241,45 +291,103 @@ const Index = () => {
                 <label className="block text-sm font-medium text-text-secondary mb-2">Escolha um Plano</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div
-                    className={`plan-card p-4 rounded-lg text-center ${formData.selectedPlan === 'basic' ? 'selected' : ''}`}
+                    className={`plan-card p-4 rounded-lg text-center cursor-pointer ${formData.selectedPlan === 'basic' ? 'selected' : ''}`}
                     onClick={() => handlePlanSelect('basic')}
                   >
                     <h3 className="font-semibold text-lg text-white">Memórias</h3>
-                    <p className="text-sm text-text-secondary">1 ano, 1 foto, sem música</p>
+                    <p className="text-sm text-text-secondary">1 ano, até 2 fotos, sem música</p>
                     <p className="font-bold text-xl text-neon-pink mt-1">R$29</p>
                   </div>
                   <div
-                    className={`plan-card p-4 rounded-lg text-center ${formData.selectedPlan === 'premium' ? 'selected' : ''}`}
+                    className={`plan-card p-4 rounded-lg text-center cursor-pointer ${formData.selectedPlan === 'premium' ? 'selected' : ''}`}
                     onClick={() => handlePlanSelect('premium')}
                   >
                     <h3 className="font-semibold text-lg text-white">Eternidade</h3>
-                    <p className="text-sm text-text-secondary">Para sempre, 3 fotos, com música</p>
+                    <p className="text-sm text-text-secondary">Para sempre, até 5 fotos, com música</p>
                     <p className="font-bold text-xl text-neon-pink mt-1">R$40</p>
                   </div>
                 </div>
               </div>
 
+              {/* Music URL - Only shown for premium plan */}
+              {formData.selectedPlan === 'premium' && (
+                <div>
+                  <label htmlFor="musicUrl" className="block text-sm font-medium text-text-secondary mb-1">
+                    Link da Música (opcional)
+                  </label>
+                  <div className="relative">
+                    <Music className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-secondary" />
+                    <input
+                      type="url"
+                      id="musicUrl"
+                      name="musicUrl"
+                      value={formData.musicUrl}
+                      onChange={handleInputChange}
+                      className="w-full p-3 pl-12 input-field"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                  </div>
+                  <p className="text-xs text-text-secondary mt-1">Cole o link do YouTube, Spotify ou outro serviço de música</p>
+                </div>
+              )}
+
               {/* Photo Upload */}
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Foto do Casal</label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    id="couplePhoto"
-                    name="couplePhoto"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <button
-                    type="button"
-                    className="w-full btn-secondary p-3 rounded-lg font-medium flex items-center justify-center"
-                  >
-                    <Upload className="h-5 w-5 mr-2" />
-                    Escolher arquivo
-                  </button>
-                </div>
-                {fileName && <p className="text-xs text-text-secondary mt-1">{fileName}</p>}
+                <label className="block text-sm font-medium text-text-secondary mb-1">
+                  Fotos do Casal {formData.selectedPlan && `(${formData.couplePhotos.length}/${getPhotoLimit()})`}
+                </label>
+                
+                {/* Photo Previews */}
+                {photoPreviews.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                    {photoPreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img 
+                          src={preview} 
+                          alt={`Foto ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border-2 border-border-color"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                {formData.couplePhotos.length < getPhotoLimit() && (
+                  <div className="relative">
+                    <input
+                      type="file"
+                      id="couplePhotos"
+                      name="couplePhotos"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      disabled={!formData.selectedPlan}
+                    />
+                    <button
+                      type="button"
+                      className={`w-full btn-secondary p-3 rounded-lg font-medium flex items-center justify-center ${!formData.selectedPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={!formData.selectedPlan}
+                    >
+                      <Upload className="h-5 w-5 mr-2" />
+                      {formData.selectedPlan ? 'Adicionar fotos' : 'Escolha um plano primeiro'}
+                    </button>
+                  </div>
+                )}
+                
+                {formData.selectedPlan && (
+                  <p className="text-xs text-text-secondary mt-1">
+                    Você pode adicionar até {getPhotoLimit()} fotos com o plano {formData.selectedPlan === 'basic' ? 'Memórias' : 'Eternidade'}
+                  </p>
+                )}
               </div>
             </form>
           </div>
@@ -295,12 +403,26 @@ const Index = () => {
               </div>
               <div className="p-6 text-center">
                 <div className="w-48 h-48 sm:w-56 sm:h-56 bg-gray-700 mx-auto rounded-lg mb-6 flex items-center justify-center overflow-hidden border-2 border-border-color">
-                  <img
-                    src={photoPreview}
-                    alt="Pré-visualização da foto"
-                    className="w-full h-full object-cover"
-                  />
+                  {photoPreviews.length > 0 ? (
+                    <img
+                      src={photoPreviews[0]}
+                      alt="Pré-visualização da foto"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src="https://placehold.co/200x200/374151/e0e0e0?text=Foto+Casal"
+                      alt="Pré-visualização da foto"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
+
+                {photoPreviews.length > 1 && (
+                  <p className="text-xs text-text-secondary mb-2">
+                    +{photoPreviews.length - 1} foto{photoPreviews.length > 2 ? 's' : ''}
+                  </p>
+                )}
 
                 <h3 className="text-2xl playfair-display font-bold text-white mb-1">
                   {formData.coupleName || 'Nome do Casal'}
@@ -316,6 +438,14 @@ const Index = () => {
                     dangerouslySetInnerHTML={{ __html: countdown }}
                   />
                 </div>
+                
+                {formData.selectedPlan === 'premium' && formData.musicUrl && (
+                  <div className="flex items-center justify-center text-xs text-text-secondary mb-2">
+                    <Music className="h-3 w-3 mr-1" />
+                    <span>Com música de fundo</span>
+                  </div>
+                )}
+                
                 <p className="text-xs text-text-secondary">{getPlanDisplay()}</p>
               </div>
             </div>

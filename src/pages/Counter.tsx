@@ -1,13 +1,17 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Music, Pause, Play } from 'lucide-react';
 
 const Counter = () => {
   const location = useLocation();
   const state = location.state as any;
   
   const [countdown, setCountdown] = useState<string>('Calculando...');
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Dados de exemplo ou do estado passado
   const data = state || {
@@ -15,7 +19,29 @@ const Counter = () => {
     startDate: "2020-03-11",
     startTime: "12:35",
     message: "Eu te amo! E eu amo passar meu tempo com você! Contando nosso tempo juntos para sempre!",
-    photoUrl: "https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"
+    photoUrls: ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"],
+    musicUrl: ""
+  };
+
+  const photos = data.photoUrls || ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"];
+
+  const nextPhoto = () => {
+    setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
+  };
+
+  const prevPhoto = () => {
+    setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
+  };
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const startDisplayCountdown = (startDate: string, startTime: string = "00:00") => {
@@ -77,6 +103,16 @@ const Counter = () => {
     };
   }, [data.startDate, data.startTime]);
 
+  // Auto-advance photos every 5 seconds if there are multiple photos
+  useEffect(() => {
+    if (photos.length > 1) {
+      const interval = setInterval(() => {
+        nextPhoto();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [photos.length]);
+
   return (
     <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-5 overflow-x-hidden">
       <header className="absolute top-0 left-0 right-0 p-4 text-center z-10">
@@ -84,6 +120,25 @@ const Counter = () => {
           Love<span className="text-neon-pink">Bloom</span>
         </Link>
       </header>
+
+      {/* Music Controls */}
+      {data.musicUrl && (
+        <>
+          <audio 
+            ref={audioRef}
+            src={data.musicUrl}
+            loop
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+          />
+          <button
+            onClick={toggleMusic}
+            className="absolute top-4 right-4 z-20 bg-element-bg p-3 rounded-full shadow-lg text-neon-pink hover:bg-element-bg-lighter transition-colors"
+          >
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          </button>
+        </>
+      )}
 
       <div className="counter-main-container bg-element-bg p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative">
         {/* Floating Hearts */}
@@ -124,12 +179,44 @@ const Counter = () => {
           animation: 'floatHeart 8s infinite ease-in-out 2.5s'
         }}>💝</span>
 
-        <div className="w-full rounded-lg overflow-hidden mb-5 border-2 border-neon-pink bg-element-bg-lighter" style={{ aspectRatio: '9/16' }}>
+        {/* Photo Container */}
+        <div className="relative w-full rounded-lg overflow-hidden mb-5 border-2 border-neon-pink bg-element-bg-lighter" style={{ aspectRatio: '9/16' }}>
           <img 
-            src={data.photoUrl || "https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"} 
-            alt={`Foto 9:16 de ${data.coupleName || 'Casal'}`}
-            className="w-full h-full object-cover block"
+            src={photos[currentPhotoIndex]}
+            alt={`Foto ${currentPhotoIndex + 1} de ${data.coupleName || 'Casal'}`}
+            className="w-full h-full object-cover block transition-opacity duration-500"
           />
+          
+          {/* Photo Navigation */}
+          {photos.length > 1 && (
+            <>
+              <button
+                onClick={prevPhoto}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={nextPhoto}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              
+              {/* Photo Indicators */}
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+                {photos.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentPhotoIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentPhotoIndex ? 'bg-neon-pink' : 'bg-white bg-opacity-50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <h2 className="text-2xl font-bold mb-2 text-text-primary playfair-display">
@@ -144,6 +231,14 @@ const Counter = () => {
         <div className="text-sm text-text-secondary mt-4 pt-2 border-t border-opacity-20" style={{ borderColor: '#ff007f' }}>
           <p>{data.message}</p>
         </div>
+
+        {/* Music indicator */}
+        {data.musicUrl && (
+          <div className="flex items-center justify-center mt-3 text-xs text-text-secondary">
+            <Music className="h-3 w-3 mr-1" />
+            <span>Música de fundo {isPlaying ? 'tocando' : 'pausada'}</span>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
