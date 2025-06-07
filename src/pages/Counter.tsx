@@ -304,8 +304,12 @@ const Counter = () => {
         </div>
 
         <h2 className="text-2xl font-bold mb-2 text-text-primary playfair-display">
-          Juntos
+          {data.coupleName}
         </h2>
+        
+        <h3 className="text-lg font-semibold mb-2 text-white playfair-display">
+          Juntos
+        </h3>
         
         <div 
           className="text-lg leading-relaxed text-neon-pink font-bold mb-4"
