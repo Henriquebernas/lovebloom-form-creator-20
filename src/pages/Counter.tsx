@@ -261,8 +261,8 @@ const Counter = () => {
           animation: 'floatHeart 8s infinite ease-in-out 2.5s'
         }}>💝</span>
 
-        {/* Photo Container */}
-        <div className="relative w-full rounded-lg overflow-hidden mb-5 border-2 border-neon-pink bg-element-bg-lighter" style={{ aspectRatio: '9/16' }}>
+        {/* Photo Container - Removida a borda branca */}
+        <div className="relative w-full rounded-lg overflow-hidden mb-5 bg-element-bg-lighter shadow-lg" style={{ aspectRatio: '9/16' }}>
           <img 
             src={photos[currentPhotoIndex]}
             alt={`Foto ${currentPhotoIndex + 1} de ${data.coupleName || 'Casal'}`}
