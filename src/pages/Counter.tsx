@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
-import { extractYouTubeVideoId, createYouTubeEmbedUrl } from '../utils/youtubeUtils';
+import { extractYouTubeVideoId, createYouTubeEmbedUrl, loadYouTubeAPI } from '../utils/youtubeUtils';
 
 const Counter = () => {
   const location = useLocation();
@@ -9,9 +10,11 @@ const Counter = () => {
   
   const [countdown, setCountdown] = useState<string>('Calculando...');
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); // Começar com som ligado
+  const [youtubePlayer, setYoutubePlayer] = useState<any>(null);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Dados de exemplo ou do estado passado
   const data = state || {
@@ -25,7 +28,6 @@ const Counter = () => {
 
   const photos = data.photoUrls || ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"];
   const videoId = extractYouTubeVideoId(data.musicUrl);
-  const embedUrl = videoId ? createYouTubeEmbedUrl(videoId) : null;
 
   const nextPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
@@ -36,16 +38,74 @@ const Counter = () => {
   };
 
   const toggleMute = () => {
-    if (iframeRef.current) {
-      // Send message to iframe to toggle mute
-      const action = isMuted ? 'unMute' : 'mute';
-      iframeRef.current.contentWindow?.postMessage(
-        `{"event":"command","func":"${action}","args":""}`,
-        '*'
-      );
+    if (youtubePlayer && isPlayerReady) {
+      if (isMuted) {
+        youtubePlayer.unMute();
+        youtubePlayer.setVolume(50); // Volume médio
+      } else {
+        youtubePlayer.mute();
+      }
       setIsMuted(!isMuted);
     }
   };
+
+  // Inicializar YouTube Player
+  useEffect(() => {
+    if (!videoId) return;
+
+    const initializePlayer = async () => {
+      try {
+        await loadYouTubeAPI();
+        
+        if (playerContainerRef.current && window.YT && window.YT.Player) {
+          const player = new window.YT.Player(playerContainerRef.current, {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: {
+              autoplay: 1,
+              mute: isMuted ? 1 : 0,
+              loop: 1,
+              playlist: videoId,
+              controls: 0,
+              showinfo: 0,
+              rel: 0,
+              iv_load_policy: 3,
+              modestbranding: 1,
+              playsinline: 1,
+              enablejsapi: 1
+            },
+            events: {
+              onReady: (event: any) => {
+                console.log('YouTube player ready');
+                setYoutubePlayer(event.target);
+                setIsPlayerReady(true);
+                
+                // Configurar volume inicial
+                if (!isMuted) {
+                  event.target.unMute();
+                  event.target.setVolume(50);
+                }
+              },
+              onStateChange: (event: any) => {
+                // Garantir que o vídeo continue em loop
+                if (event.data === window.YT.PlayerState.ENDED) {
+                  event.target.playVideo();
+                }
+              },
+              onError: (event: any) => {
+                console.error('YouTube player error:', event.data);
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing YouTube player:', error);
+      }
+    };
+
+    initializePlayer();
+  }, [videoId, isMuted]);
 
   const startDisplayCountdown = (startDate: string, startTime: string = "00:00") => {
     if (countdownIntervalRef.current) {
@@ -119,13 +179,12 @@ const Counter = () => {
   return (
     <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-5 overflow-x-hidden relative">
       {/* YouTube Video Background */}
-      {embedUrl && (
+      {videoId && (
         <>
           <div className="fixed inset-0 w-full h-full z-0">
-            <iframe
-              ref={iframeRef}
-              src={embedUrl}
-              className="w-full h-full object-cover"
+            <div
+              ref={playerContainerRef}
+              className="w-full h-full"
               style={{
                 position: 'absolute',
                 top: '50%',
@@ -136,9 +195,6 @@ const Counter = () => {
                 minWidth: '177.77vh', // 16:9 aspect ratio
                 transform: 'translate(-50%, -50%)',
               }}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
             />
           </div>
           
@@ -154,10 +210,11 @@ const Counter = () => {
       </header>
 
       {/* Volume Controls */}
-      {embedUrl && (
+      {videoId && (
         <button
           onClick={toggleMute}
           className="absolute top-4 right-4 z-30 bg-black bg-opacity-50 p-3 rounded-full shadow-lg text-white hover:bg-opacity-70 transition-colors"
+          title={isMuted ? 'Ativar som' : 'Desativar som'}
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
