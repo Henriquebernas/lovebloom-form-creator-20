@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
@@ -10,7 +9,7 @@ const Counter = () => {
   
   const [countdown, setCountdown] = useState<string>('Calculando...');
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(false); // Começar com som ligado
+  const [isMuted, setIsMuted] = useState(false);
   const [youtubePlayer, setYoutubePlayer] = useState<any>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -107,7 +106,7 @@ const Counter = () => {
     initializePlayer();
   }, [videoId, isMuted]);
 
-  const startDisplayCountdown = (startDate: string, startTime: string = "00:00") => {
+  const startDisplayCountdown = (startDate: string, startTime: string = "") => {
     if (countdownIntervalRef.current) {
       clearInterval(countdownIntervalRef.current);
     }
@@ -117,10 +116,15 @@ const Counter = () => {
       return;
     }
 
-    const startDateTimeString = `${startDate}T${startTime}`;
+    // Garantir que startTime seja "00:00" se estiver vazio, undefined ou null
+    const timeStr = startTime && startTime.trim() !== "" ? startTime : "00:00";
+    const startDateTimeString = `${startDate}T${timeStr}`;
+    
+    console.log('Creating date from:', startDateTimeString); // Debug log
     const relationshipStartDate = new Date(startDateTimeString);
 
     if (isNaN(relationshipStartDate.getTime())) {
+      console.error('Invalid date created from:', startDateTimeString); // Debug log
       setCountdown('Data inválida.');
       return;
     }
