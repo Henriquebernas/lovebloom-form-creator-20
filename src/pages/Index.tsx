@@ -1,16 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { Upload, X, Video } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
-interface FormData {
-  coupleName: string;
-  startDate: string;
-  startTime: string;
-  message: string;
-  selectedPlan: string;
-  couplePhotos: File[];
-  musicUrl: string;
-}
+import { useState, useEffect, useRef } from 'react';
+import { Video } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { FormData, ModalContent } from '@/types/index';
+import PlanSelector from '@/components/PlanSelector';
+import PhotoUpload from '@/components/PhotoUpload';
+import PreviewCard from '@/components/PreviewCard';
+import Modal from '@/components/Modal';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -28,7 +24,7 @@ const Index = () => {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<string>('0 anos, 0 meses, 0 dias<br>0 horas, 0 minutos, 0 segundos');
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [modalContent, setModalContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
+  const [modalContent, setModalContent] = useState<ModalContent>({ title: '', message: '' });
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -168,16 +164,6 @@ const Index = () => {
     };
   }, [formData.startDate, formData.startTime]);
 
-  const getSlugFromName = (name: string) => {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'seunome';
-  };
-
-  const getPlanDisplay = () => {
-    if (formData.selectedPlan === 'basic') return 'Plano: Memórias (R$29)';
-    if (formData.selectedPlan === 'premium') return 'Plano: Eternidade (R$40)';
-    return '';
-  };
-
   const handleCreateSite = () => {
     if (!formData.coupleName) {
       setModalContent({ title: 'Ops!', message: 'Por favor, informe o nome do casal.' });
@@ -287,27 +273,10 @@ const Index = () => {
               </div>
 
               {/* Plans */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Escolha um Plano</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div
-                    className={`plan-card p-4 rounded-lg text-center cursor-pointer ${formData.selectedPlan === 'basic' ? 'selected' : ''}`}
-                    onClick={() => handlePlanSelect('basic')}
-                  >
-                    <h3 className="font-semibold text-lg text-white">Memórias</h3>
-                    <p className="text-sm text-text-secondary">1 ano, até 2 fotos, sem vídeo</p>
-                    <p className="font-bold text-xl text-neon-pink mt-1">R$29</p>
-                  </div>
-                  <div
-                    className={`plan-card p-4 rounded-lg text-center cursor-pointer ${formData.selectedPlan === 'premium' ? 'selected' : ''}`}
-                    onClick={() => handlePlanSelect('premium')}
-                  >
-                    <h3 className="font-semibold text-lg text-white">Eternidade</h3>
-                    <p className="text-sm text-text-secondary">Para sempre, até 5 fotos, com vídeo de fundo</p>
-                    <p className="font-bold text-xl text-neon-pink mt-1">R$40</p>
-                  </div>
-                </div>
-              </div>
+              <PlanSelector 
+                selectedPlan={formData.selectedPlan}
+                onPlanSelect={handlePlanSelect}
+              />
 
               {/* Video URL - Only shown for premium plan */}
               {formData.selectedPlan === 'premium' && (
@@ -332,123 +301,27 @@ const Index = () => {
               )}
 
               {/* Photo Upload */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Fotos do Casal {formData.selectedPlan && `(${formData.couplePhotos.length}/${getPhotoLimit()})`}
-                </label>
-                
-                {/* Photo Previews */}
-                {photoPreviews.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                    {photoPreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img 
-                          src={preview} 
-                          alt={`Foto ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg border-2 border-border-color"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(index)}
-                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Upload Button */}
-                {formData.couplePhotos.length < getPhotoLimit() && (
-                  <div className="relative">
-                    <input
-                      type="file"
-                      id="couplePhotos"
-                      name="couplePhotos"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      disabled={!formData.selectedPlan}
-                    />
-                    <button
-                      type="button"
-                      className={`w-full btn-secondary p-3 rounded-lg font-medium flex items-center justify-center ${!formData.selectedPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      disabled={!formData.selectedPlan}
-                    >
-                      <Upload className="h-5 w-5 mr-2" />
-                      {formData.selectedPlan ? 'Adicionar fotos' : 'Escolha um plano primeiro'}
-                    </button>
-                  </div>
-                )}
-                
-                {formData.selectedPlan && (
-                  <p className="text-xs text-text-secondary mt-1">
-                    Você pode adicionar até {getPhotoLimit()} fotos com o plano {formData.selectedPlan === 'basic' ? 'Memórias' : 'Eternidade'}
-                  </p>
-                )}
-              </div>
+              <PhotoUpload
+                selectedPlan={formData.selectedPlan}
+                couplePhotos={formData.couplePhotos}
+                photoPreviews={photoPreviews}
+                onFileChange={handleFileChange}
+                onRemovePhoto={removePhoto}
+              />
             </form>
           </div>
 
           {/* Preview Section */}
           <div className="lg:w-1/2 flex flex-col items-center">
             <p className="text-sm text-text-secondary mb-2">Como vai ficar:</p>
-            <div className="w-full max-w-md preview-card rounded-xl custom-shadow overflow-hidden">
-              <div className="preview-header p-3 text-center">
-                <span className="text-white text-sm font-medium">
-                  lovebloom.com/{getSlugFromName(formData.coupleName)}
-                </span>
-              </div>
-              <div className="p-6 text-center">
-                <div className="w-48 h-48 sm:w-56 sm:h-56 bg-gray-700 mx-auto rounded-lg mb-6 flex items-center justify-center overflow-hidden border-2 border-border-color">
-                  {photoPreviews.length > 0 ? (
-                    <img
-                      src={photoPreviews[0]}
-                      alt="Pré-visualização da foto"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src="https://placehold.co/200x200/374151/e0e0e0?text=Foto+Casal"
-                      alt="Pré-visualização da foto"
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-
-                {photoPreviews.length > 1 && (
-                  <p className="text-xs text-text-secondary mb-2">
-                    +{photoPreviews.length - 1} foto{photoPreviews.length > 2 ? 's' : ''}
-                  </p>
-                )}
-
-                <h3 className="text-2xl playfair-display font-bold text-white mb-1">
-                  {formData.coupleName || 'Nome do Casal'}
-                </h3>
-                <p className="text-text-secondary text-sm mb-4 italic h-12 overflow-y-auto">
-                  {formData.message || 'Sua mensagem especial aparecerá aqui.'}
-                </p>
-
-                <div className="preview-countdown-bg p-4 rounded-lg mb-4">
-                  <p className="text-lg font-semibold text-white mb-1">Juntos há:</p>
-                  <div 
-                    className="text-xl sm:text-2xl font-bold text-neon-pink"
-                    dangerouslySetInnerHTML={{ __html: countdown }}
-                  />
-                </div>
-                
-                {formData.selectedPlan === 'premium' && formData.musicUrl && (
-                  <div className="flex items-center justify-center text-xs text-text-secondary mb-2">
-                    <Video className="h-3 w-3 mr-1" />
-                    <span>Com vídeo de fundo</span>
-                  </div>
-                )}
-                
-                <p className="text-xs text-text-secondary">{getPlanDisplay()}</p>
-              </div>
-            </div>
+            <PreviewCard
+              coupleName={formData.coupleName}
+              message={formData.message}
+              photoPreviews={photoPreviews}
+              countdown={countdown}
+              selectedPlan={formData.selectedPlan}
+              musicUrl={formData.musicUrl}
+            />
             <button
               type="button"
               onClick={handleCreateSite}
@@ -461,26 +334,11 @@ const Index = () => {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <div className="modal flex items-center justify-center">
-          <div className="modal-content">
-            <span
-              className="float-right text-2xl font-bold cursor-pointer text-text-secondary hover:text-neon-pink"
-              onClick={() => setShowModal(false)}
-            >
-              &times;
-            </span>
-            <h3 className="text-2xl font-bold playfair-display text-white mb-3">{modalContent.title}</h3>
-            <p className="text-md text-text-secondary">{modalContent.message}</p>
-            <button
-              onClick={() => setShowModal(false)}
-              className="btn-primary mt-4 px-6 py-2 rounded-lg"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showModal}
+        content={modalContent}
+        onClose={() => setShowModal(false)}
+      />
     </div>
   );
 };
