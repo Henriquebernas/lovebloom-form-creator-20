@@ -195,25 +195,15 @@ const Index = () => {
       return;
     }
     
-    // Parse couple names
-    const coupleNames = formData.coupleName.split('&').map(name => name.trim());
-    const partner1 = coupleNames[0] || formData.coupleName;
-    const partner2 = coupleNames[1] || '';
-
-    // Create the coupleData object in the format expected by Counter component
-    const coupleData = {
-      partner1,
-      partner2,
-      startDate: formData.startDate,
-      startTime: formData.startTime,
-      message: formData.message,
-      photos: photoPreviews.length > 0 ? photoPreviews : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"],
-      youtubeUrl: formData.musicUrl,
-      selectedPlan: formData.selectedPlan
-    };
-    
     navigate('/counter', {
-      state: { coupleData }
+      state: {
+        coupleName: formData.coupleName,
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        message: formData.message,
+        photoUrls: photoPreviews.length > 0 ? photoPreviews : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"],
+        musicUrl: formData.musicUrl
+      }
     });
   };
 
