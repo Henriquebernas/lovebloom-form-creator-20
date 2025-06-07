@@ -15,7 +15,7 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
         >
           <h3 className="font-semibold text-lg text-white">Memórias</h3>
           <p className="text-sm text-text-secondary">1 ano, até 2 fotos, sem vídeo</p>
-          <p className="font-bold text-xl text-neon-pink mt-1">R$29</p>
+          <p className="font-bold text-xl text-neon-pink mt-1">R$19,90</p>
         </div>
         <div
           className={`plan-card p-4 rounded-lg text-center cursor-pointer ${selectedPlan === 'premium' ? 'selected' : ''}`}
@@ -23,7 +23,7 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
         >
           <h3 className="font-semibold text-lg text-white">Eternidade</h3>
           <p className="text-sm text-text-secondary">Para sempre, até 5 fotos, com vídeo de fundo</p>
-          <p className="font-bold text-xl text-neon-pink mt-1">R$40</p>
+          <p className="font-bold text-xl text-neon-pink mt-1">R$29,90</p>
         </div>
       </div>
     </div>

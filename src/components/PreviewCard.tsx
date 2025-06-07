@@ -23,8 +23,8 @@ const PreviewCard = ({
   };
 
   const getPlanDisplay = () => {
-    if (selectedPlan === 'basic') return 'Plano: Memórias (R$29)';
-    if (selectedPlan === 'premium') return 'Plano: Eternidade (R$40)';
+    if (selectedPlan === 'basic') return 'Plano: Memórias (R$19,90)';
+    if (selectedPlan === 'premium') return 'Plano: Eternidade (R$29,90)';
     return '';
   };
 

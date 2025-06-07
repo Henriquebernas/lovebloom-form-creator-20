@@ -29,13 +29,13 @@ const Counter = () => {
       {/* YouTube Video Background */}
       {videoId && <YouTubePlayer musicUrl={data.musicUrl} isBackground={true} />}
 
-      <header className="absolute top-0 left-0 right-0 p-4 text-center z-20">
+      <header className="absolute top-0 left-0 right-0 p-4 text-center z-20 mb-8">
         <Link to="/" className="text-2xl playfair-display font-bold text-white drop-shadow-lg">
           Love<span className="text-neon-pink">Bloom</span>
         </Link>
       </header>
 
-      <div className="counter-main-container bg-element-bg bg-opacity-90 p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative z-20">
+      <div className="counter-main-container bg-element-bg bg-opacity-90 p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative z-20 mt-20">
         <FloatingHearts />
 
         <PhotoGallery photos={photos} coupleName={data.coupleName} />
