@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
@@ -155,7 +156,25 @@ const Counter = () => {
       
       years = Math.max(0, years);
 
-      setCountdown(`${years} anos, ${months} meses, ${days} dias<br>${hours} horas, ${minutes} minutos e ${seconds} segundos`);
+      // Construir a string de exibição apenas com valores não-zero
+      const timeParts = [];
+      
+      if (years > 0) {
+        timeParts.push(`${years} ${years === 1 ? 'ano' : 'anos'}`);
+      }
+      
+      if (months > 0) {
+        timeParts.push(`${months} ${months === 1 ? 'mês' : 'meses'}`);
+      }
+      
+      if (days > 0) {
+        timeParts.push(`${days} ${days === 1 ? 'dia' : 'dias'}`);
+      }
+
+      const timeString = timeParts.join(', ');
+      const detailString = `${hours} horas, ${minutes} minutos e ${seconds} segundos`;
+
+      setCountdown(`${timeString}<br>${detailString}`);
     }, 1000);
   };
 
