@@ -40,7 +40,7 @@ const Counter = () => {
     if (youtubePlayer && isPlayerReady) {
       if (isMuted) {
         youtubePlayer.unMute();
-        youtubePlayer.setVolume(50); // Volume médio
+        youtubePlayer.setVolume(50);
       } else {
         youtubePlayer.mute();
       }
@@ -58,7 +58,7 @@ const Counter = () => {
         
         if (playerContainerRef.current && window.YT && window.YT.Player) {
           const player = new window.YT.Player(playerContainerRef.current, {
-            height: '100%',
+            height: '200',
             width: '100%',
             videoId: videoId,
             playerVars: {
@@ -66,8 +66,8 @@ const Counter = () => {
               mute: isMuted ? 1 : 0,
               loop: 1,
               playlist: videoId,
-              controls: 0,
-              showinfo: 0,
+              controls: 1,
+              showinfo: 1,
               rel: 0,
               iv_load_policy: 3,
               modestbranding: 1,
@@ -80,14 +80,12 @@ const Counter = () => {
                 setYoutubePlayer(event.target);
                 setIsPlayerReady(true);
                 
-                // Configurar volume inicial
                 if (!isMuted) {
                   event.target.unMute();
                   event.target.setVolume(50);
                 }
               },
               onStateChange: (event: any) => {
-                // Garantir que o vídeo continue em loop
                 if (event.data === window.YT.PlayerState.ENDED) {
                   event.target.playVideo();
                 }
@@ -319,6 +317,26 @@ const Counter = () => {
         <div className="text-sm text-text-secondary mt-4 pt-2 border-t border-opacity-20" style={{ borderColor: '#ff007f' }}>
           <p>{data.message}</p>
         </div>
+
+        {/* YouTube Player Visível */}
+        {videoId && (
+          <div className="w-full rounded-lg overflow-hidden border-2 border-neon-pink bg-black relative">
+            <div
+              ref={playerContainerRef}
+              className="w-full"
+              style={{ height: '200px' }}
+            />
+            
+            {/* Volume Control Overlay */}
+            <button
+              onClick={toggleMute}
+              className="absolute top-2 right-2 bg-black bg-opacity-70 p-2 rounded-full shadow-lg text-white hover:bg-opacity-90 transition-colors z-10"
+              title={isMuted ? 'Ativar som' : 'Desativar som'}
+            >
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </button>
+          </div>
+        )}
       </div>
 
       <style>{`
