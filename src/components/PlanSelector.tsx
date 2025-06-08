@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 interface PlanSelectorProps {
@@ -12,7 +11,7 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date();
-      const endDate = new Date('2025-06-11T23:59:59');
+      const endDate = new Date('2025-06-11T23:59:59'); // Termina em 11/06/2025
       const difference = endDate.getTime() - now.getTime();
 
       if (difference > 0) {
@@ -39,92 +38,90 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
 
   return (
     <div>
-      {/* Banner promocional mais discreto */}
-      <div className="bg-gradient-to-r from-neon-pink/20 to-red-500/20 border border-neon-pink/30 text-white p-3 rounded-lg mb-4 text-center">
-        <h3 className="font-bold text-lg">💕 PROMOÇÃO DIA DOS NAMORADOS</h3>
-        <p className="text-sm text-text-secondary">Termina em 11/06! Desconto de até 40% OFF</p>
+      {/* Banner promocional */}
+      <div className="bg-gradient-to-r from-neon-pink to-red-500 text-white p-3 rounded-lg mb-4 text-center animate-pulse">
+        <h3 className="font-bold text-lg">💕 PROMOÇÃO DIA DOS NAMORADOS 💕</h3>
+        <p className="text-sm">Termina em 11/06! Desconto de até 40% OFF</p>
       </div>
 
       <label className="block text-sm font-medium text-text-secondary mb-2">Escolha um Plano</label>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
-          className={`plan-card p-6 rounded-xl text-center cursor-pointer relative transition-all duration-300 ${
-            selectedPlan === 'basic' 
-              ? 'border-neon-pink bg-element-bg-lighter transform -translate-y-1' 
-              : 'border-border-color bg-element-bg hover:border-neon-pink/50 hover:-translate-y-0.5'
-          }`}
+          className={`plan-card p-4 rounded-lg text-center cursor-pointer relative ${selectedPlan === 'basic' ? 'selected' : ''}`}
           onClick={() => onPlanSelect('basic')}
         >
-          {/* Badge de desconto discreto */}
-          <div className="absolute -top-2 -right-2 bg-neon-pink text-white text-xs px-2 py-1 rounded-full font-semibold">
+          {/* Badge de desconto */}
+          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-bounce">
             33% OFF
           </div>
           
-          <h3 className="font-semibold text-xl text-white mb-2">Memórias</h3>
-          <p className="text-sm text-text-secondary mb-4">1 ano, até 2 fotos, sem vídeo</p>
+          <h3 className="font-semibold text-lg text-white">Memórias</h3>
+          <p className="text-sm text-text-secondary mb-2">1 ano, até 2 fotos, sem vídeo</p>
           
-          {/* Preços mais limpos */}
-          <div className="space-y-2">
+          {/* Preços */}
+          <div className="space-y-1">
             <p className="text-sm text-gray-400 line-through">De R$29,90</p>
-            <div className="flex items-baseline justify-center gap-2">
-              <span className="text-sm text-text-secondary">Por</span>
-              <p className="font-bold text-2xl text-neon-pink">R$19,90</p>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-sm text-gray-300">Por apenas</span>
+              <p className="font-bold text-xl text-neon-pink">R$19,90</p>
             </div>
-            <p className="text-xs text-green-400">Economia de R$10,00</p>
+            <p className="text-xs text-green-400 font-semibold">💸 Economia de R$10,00</p>
+          </div>
+          
+          {/* Urgência */}
+          <div className="mt-2 text-xs text-yellow-300">
+            ⚡ Oferta por tempo limitado
           </div>
         </div>
 
         <div
-          className={`plan-card p-6 rounded-xl text-center cursor-pointer relative transition-all duration-300 ${
-            selectedPlan === 'premium' 
-              ? 'border-neon-pink bg-element-bg-lighter transform -translate-y-1' 
-              : 'border-border-color bg-element-bg hover:border-neon-pink/50 hover:-translate-y-0.5'
-          }`}
+          className={`plan-card p-4 rounded-lg text-center cursor-pointer relative ${selectedPlan === 'premium' ? 'selected' : ''}`}
           onClick={() => onPlanSelect('premium')}
         >
-          {/* Badges mais discretos */}
-          <div className="absolute -top-2 -right-2 bg-neon-pink text-white text-xs px-2 py-1 rounded-full font-semibold">
+          {/* Badge de desconto e mais popular */}
+          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-bounce">
             40% OFF
           </div>
-          <div className="absolute -top-2 -left-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-            POPULAR
+          <div className="absolute -top-2 -left-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+            🔥 MAIS POPULAR
           </div>
           
-          <h3 className="font-semibold text-xl text-white mb-2">Eternidade</h3>
-          <p className="text-sm text-text-secondary mb-4">Para sempre, até 5 fotos, com vídeo</p>
+          <h3 className="font-semibold text-lg text-white">Eternidade</h3>
+          <p className="text-sm text-text-secondary mb-2">Para sempre, até 5 fotos, com vídeo de fundo</p>
           
-          {/* Preços mais limpos */}
-          <div className="space-y-2">
+          {/* Preços */}
+          <div className="space-y-1">
             <p className="text-sm text-gray-400 line-through">De R$49,90</p>
-            <div className="flex items-baseline justify-center gap-2">
-              <span className="text-sm text-text-secondary">Por</span>
-              <p className="font-bold text-2xl text-neon-pink">R$29,90</p>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-sm text-gray-300">Por apenas</span>
+              <p className="font-bold text-xl text-neon-pink">R$29,90</p>
             </div>
-            <p className="text-xs text-green-400">Economia de R$20,00</p>
+            <p className="text-xs text-green-400 font-semibold">💸 Economia de R$20,00</p>
           </div>
           
-          {/* Benefício extra mais discreto */}
-          <div className="mt-3">
+          {/* Benefícios exclusivos */}
+          <div className="mt-2 space-y-1">
+            <p className="text-xs text-yellow-300">⚡ Oferta por tempo limitado</p>
             <p className="text-xs text-blue-300">🎁 Brinde: Vídeo personalizado</p>
           </div>
         </div>
       </div>
 
-      {/* Contador mais elegante */}
-      <div className="mt-4 text-center p-4 bg-element-bg border border-border-color rounded-lg">
-        <p className="text-sm text-text-secondary">
+      {/* Contador de urgência */}
+      <div className="mt-4 text-center p-3 bg-red-900 bg-opacity-30 rounded-lg border border-red-500">
+        <p className="text-sm text-red-300 font-semibold">
           ⏰ Promoção termina em: 
-          <span className="text-neon-pink ml-1 font-semibold">{timeLeft}</span>
+          <span className="text-red-200 ml-1 font-bold">{timeLeft}</span>
         </p>
-        <p className="text-xs text-text-secondary mt-1 opacity-75">
-          Termina dia 11/06 às 23:59
+        <p className="text-xs text-gray-300 mt-1">
+          Termina dia 11/06 às 23:59! Não perca esta oportunidade única 💕
         </p>
       </div>
 
-      {/* Social proof mais discreto */}
+      {/* Social proof */}
       <div className="mt-3 text-center">
-        <p className="text-xs text-text-secondary opacity-60">
-          Mais de 1.247 casais já aproveitaram esta oferta
+        <p className="text-xs text-gray-400">
+          🔥 Mais de 1.247 casais já aproveitaram esta oferta especial
         </p>
       </div>
     </div>
