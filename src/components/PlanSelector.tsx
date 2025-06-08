@@ -1,25 +1,23 @@
 import { useState, useEffect } from 'react';
-
 interface PlanSelectorProps {
   selectedPlan: string;
   onPlanSelect: (plan: string) => void;
 }
-
-const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
+const PlanSelector = ({
+  selectedPlan,
+  onPlanSelect
+}: PlanSelectorProps) => {
   const [timeLeft, setTimeLeft] = useState('');
-
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date();
       const endDate = new Date('2025-06-11T23:59:59'); // Termina em 11/06/2025
       const difference = endDate.getTime() - now.getTime();
-
       if (difference > 0) {
         const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
+        const hours = Math.floor(difference % (1000 * 60 * 60 * 24) / (1000 * 60 * 60));
+        const minutes = Math.floor(difference % (1000 * 60 * 60) / (1000 * 60));
+        const seconds = Math.floor(difference % (1000 * 60) / 1000);
         if (days > 0) {
           setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
         } else {
@@ -29,15 +27,11 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
         setTimeLeft('Promoção encerrada');
       }
     };
-
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
-
     return () => clearInterval(interval);
   }, []);
-
-  return (
-    <div>
+  return <div>
       {/* Banner promocional */}
       <div className="bg-gradient-to-r from-neon-pink to-red-500 text-white p-3 rounded-lg mb-4 text-center animate-pulse">
         <h3 className="font-bold text-lg">💕 PROMOÇÃO DIA DOS NAMORADOS 💕</h3>
@@ -46,10 +40,7 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
 
       <label className="block text-sm font-medium text-text-secondary mb-2">Escolha um Plano</label>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div
-          className={`plan-card p-4 rounded-lg text-center cursor-pointer relative ${selectedPlan === 'basic' ? 'selected' : ''}`}
-          onClick={() => onPlanSelect('basic')}
-        >
+        <div className={`plan-card p-4 rounded-lg text-center cursor-pointer relative ${selectedPlan === 'basic' ? 'selected' : ''}`} onClick={() => onPlanSelect('basic')}>
           {/* Badge de desconto */}
           <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-bounce">
             33% OFF
@@ -70,14 +61,10 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
           
           {/* Urgência */}
           <div className="mt-2 text-xs text-yellow-300">
-            ⚡ Oferta por tempo limitado
-          </div>
+        </div>
         </div>
 
-        <div
-          className={`plan-card p-4 rounded-lg text-center cursor-pointer relative ${selectedPlan === 'premium' ? 'selected' : ''}`}
-          onClick={() => onPlanSelect('premium')}
-        >
+        <div className={`plan-card p-4 rounded-lg text-center cursor-pointer relative ${selectedPlan === 'premium' ? 'selected' : ''}`} onClick={() => onPlanSelect('premium')}>
           {/* Badge de desconto e mais popular */}
           <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-bounce">
             40% OFF
@@ -124,8 +111,6 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
           🔥 Mais de 1.247 casais já aproveitaram esta oferta especial
         </p>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default PlanSelector;
