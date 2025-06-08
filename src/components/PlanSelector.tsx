@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 
 interface PlanSelectorProps {
   selectedPlan: string;
@@ -5,12 +6,42 @@ interface PlanSelectorProps {
 }
 
 const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date();
+      const endDate = new Date('2025-06-11T23:59:59'); // Termina em 11/06/2025
+      const difference = endDate.getTime() - now.getTime();
+
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        if (days > 0) {
+          setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+        } else {
+          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+        }
+      } else {
+        setTimeLeft('Promoção encerrada');
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div>
       {/* Banner promocional */}
       <div className="bg-gradient-to-r from-neon-pink to-red-500 text-white p-3 rounded-lg mb-4 text-center animate-pulse">
         <h3 className="font-bold text-lg">💕 PROMOÇÃO DIA DOS NAMORADOS 💕</h3>
-        <p className="text-sm">Últimas 48 horas! Desconto de até 40% OFF</p>
+        <p className="text-sm">Termina em 11/06! Desconto de até 40% OFF</p>
       </div>
 
       <label className="block text-sm font-medium text-text-secondary mb-2">Escolha um Plano</label>
@@ -80,10 +111,10 @@ const PlanSelector = ({ selectedPlan, onPlanSelect }: PlanSelectorProps) => {
       <div className="mt-4 text-center p-3 bg-red-900 bg-opacity-30 rounded-lg border border-red-500">
         <p className="text-sm text-red-300 font-semibold">
           ⏰ Promoção termina em: 
-          <span className="text-red-200 ml-1 font-bold">47h 23m 15s</span>
+          <span className="text-red-200 ml-1 font-bold">{timeLeft}</span>
         </p>
         <p className="text-xs text-gray-300 mt-1">
-          Depois volta ao preço normal! Não perca esta oportunidade única 💕
+          Termina dia 11/06 às 23:59! Não perca esta oportunidade única 💕
         </p>
       </div>
 
