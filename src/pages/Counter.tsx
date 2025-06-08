@@ -5,6 +5,7 @@ import { useCountdown } from '../hooks/useCountdown';
 import FloatingHearts from '../components/FloatingHearts';
 import PhotoGallery from '../components/PhotoGallery';
 import YouTubePlayer from '../components/YouTubePlayer';
+import QRCodeSection from '../components/QRCodeSection';
 
 const Counter = () => {
   const location = useLocation();
@@ -23,6 +24,9 @@ const Counter = () => {
   const photos = data.photoUrls || ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"];
   const videoId = extractYouTubeVideoId(data.musicUrl);
   const countdown = useCountdown(data.startDate, data.startTime);
+
+  // Gerar URL da página atual
+  const currentPageUrl = window.location.href;
 
   return (
     <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-5 overflow-x-hidden relative">
@@ -56,6 +60,12 @@ const Counter = () => {
 
         {/* YouTube Player Visível - mantido apenas este */}
         {videoId && <YouTubePlayer musicUrl={data.musicUrl} />}
+
+        {/* QR Code Section */}
+        <QRCodeSection 
+          coupleName={data.coupleName} 
+          pageUrl={currentPageUrl}
+        />
       </div>
 
       <style>{`
