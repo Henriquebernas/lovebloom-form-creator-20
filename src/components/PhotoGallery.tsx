@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PhotoGalleryProps {
   photos: string[];
@@ -12,10 +11,6 @@ const PhotoGallery = ({ photos, coupleName }: PhotoGalleryProps) => {
 
   const nextPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
-  };
-
-  const prevPhoto = () => {
-    setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
   };
 
   // Auto-advance photos every 5 seconds if there are multiple photos
@@ -36,35 +31,19 @@ const PhotoGallery = ({ photos, coupleName }: PhotoGalleryProps) => {
         className="w-full h-full object-cover block transition-opacity duration-500"
       />
       
-      {/* Photo Navigation */}
+      {/* Photo Indicators - Only shown if there are multiple photos */}
       {photos.length > 1 && (
-        <>
-          <button
-            onClick={prevPhoto}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={nextPhoto}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          
-          {/* Photo Indicators */}
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-            {photos.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentPhotoIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentPhotoIndex ? 'bg-neon-pink' : 'bg-white bg-opacity-50'
-                }`}
-              />
-            ))}
-          </div>
-        </>
+        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+          {photos.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentPhotoIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentPhotoIndex ? 'bg-neon-pink' : 'bg-white bg-opacity-50'
+              }`}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
