@@ -88,7 +88,7 @@ const PlanSelector = ({
           
           {/* Benefícios exclusivos */}
           <div className="mt-2 space-y-1">
-            <p className="text-xs text-yellow-300">⚡ Oferta por tempo limitado</p>
+            
             <p className="text-xs text-blue-300">🎁 Brinde: Vídeo personalizado</p>
           </div>
         </div>
