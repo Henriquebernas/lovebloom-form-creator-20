@@ -26,9 +26,6 @@ const Counter = () => {
 
   return (
     <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-5 overflow-x-hidden relative">
-      {/* YouTube Video Background */}
-      {videoId && <YouTubePlayer musicUrl={data.musicUrl} isBackground={true} />}
-
       <header className="absolute top-0 left-0 right-0 p-4 text-center z-20 mb-8">
         <Link to="/" className="text-2xl playfair-display font-bold text-white drop-shadow-lg">
           Love<span className="text-neon-pink">Bloom</span>
@@ -57,7 +54,7 @@ const Counter = () => {
           <p>{data.message}</p>
         </div>
 
-        {/* YouTube Player Visível */}
+        {/* YouTube Player Visível - mantido apenas este */}
         {videoId && <YouTubePlayer musicUrl={data.musicUrl} />}
       </div>
 
