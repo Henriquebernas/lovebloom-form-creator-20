@@ -6,6 +6,7 @@ import FloatingHearts from '../components/FloatingHearts';
 import PhotoGallery from '../components/PhotoGallery';
 import YouTubePlayer from '../components/YouTubePlayer';
 import QRCodeSection from '../components/QRCodeSection';
+import Footer from '../components/Footer';
 
 const Counter = () => {
   const location = useLocation();
@@ -29,44 +30,49 @@ const Counter = () => {
   const currentPageUrl = window.location.href;
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-5 overflow-x-hidden relative">
+    <div className="min-h-screen bg-dark-bg flex flex-col">
       <header className="absolute top-0 left-0 right-0 p-4 text-center z-20 mb-8">
         <Link to="/" className="text-2xl playfair-display font-bold text-white drop-shadow-lg">
           Love<span className="text-neon-pink">Bloom</span>
         </Link>
       </header>
 
-      <div className="counter-main-container bg-element-bg bg-opacity-90 p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative z-20 mt-20">
-        <FloatingHearts />
+      <div className="flex-1 flex flex-col items-center justify-center p-5 overflow-x-hidden relative">
+        <div className="counter-main-container bg-element-bg bg-opacity-90 p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative z-20 mt-20">
+          <FloatingHearts />
 
-        <PhotoGallery photos={photos} coupleName={data.coupleName} />
+          <PhotoGallery photos={photos} coupleName={data.coupleName} />
 
-        <h2 className="text-2xl font-bold mb-2 text-text-primary playfair-display">
-          {data.coupleName}
-        </h2>
-        
-        <h3 className="text-lg font-semibold mb-2 text-white playfair-display">
-          Juntos
-        </h3>
-        
-        <div 
-          className="text-lg leading-relaxed text-neon-pink font-bold mb-4"
-          dangerouslySetInnerHTML={{ __html: countdown }}
-        />
+          <h2 className="text-2xl font-bold mb-2 text-text-primary playfair-display">
+            {data.coupleName}
+          </h2>
+          
+          <h3 className="text-lg font-semibold mb-2 text-white playfair-display">
+            Juntos
+          </h3>
+          
+          <div 
+            className="text-lg leading-relaxed text-neon-pink font-bold mb-4"
+            dangerouslySetInnerHTML={{ __html: countdown }}
+          />
 
-        <div className="text-sm text-text-secondary mt-4 pt-2 border-t border-opacity-20" style={{ borderColor: '#ff007f' }}>
-          <p>{data.message}</p>
+          <div className="text-sm text-text-secondary mt-4 pt-2 border-t border-opacity-20" style={{ borderColor: '#ff007f' }}>
+            <p>{data.message}</p>
+          </div>
+
+          {/* YouTube Player Visível - mantido apenas este */}
+          {videoId && <YouTubePlayer musicUrl={data.musicUrl} />}
+
+          {/* QR Code Section */}
+          <QRCodeSection 
+            coupleName={data.coupleName} 
+            pageUrl={currentPageUrl}
+          />
         </div>
-
-        {/* YouTube Player Visível - mantido apenas este */}
-        {videoId && <YouTubePlayer musicUrl={data.musicUrl} />}
-
-        {/* QR Code Section */}
-        <QRCodeSection 
-          coupleName={data.coupleName} 
-          pageUrl={currentPageUrl}
-        />
       </div>
+
+      {/* Footer */}
+      <Footer />
 
       <style>{`
         @keyframes floatHeart {
