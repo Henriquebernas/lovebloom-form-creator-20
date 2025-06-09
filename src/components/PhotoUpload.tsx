@@ -7,6 +7,7 @@ interface PhotoUploadProps {
   photoPreviews: string[];
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemovePhoto: (index: number) => void;
+  disabled?: boolean;
 }
 
 const PhotoUpload = ({ 
@@ -14,7 +15,8 @@ const PhotoUpload = ({
   couplePhotos, 
   photoPreviews, 
   onFileChange, 
-  onRemovePhoto 
+  onRemovePhoto,
+  disabled = false
 }: PhotoUploadProps) => {
   const getPhotoLimit = () => {
     return selectedPlan === 'basic' ? 2 : selectedPlan === 'premium' ? 5 : 0;
@@ -41,7 +43,8 @@ const PhotoUpload = ({
               <button
                 type="button"
                 onClick={() => onRemovePhoto(index)}
-                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                disabled={disabled}
+                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -61,15 +64,15 @@ const PhotoUpload = ({
             multiple
             onChange={onFileChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            disabled={!selectedPlan}
+            disabled={!selectedPlan || disabled}
           />
           <button
             type="button"
-            className={`w-full btn-secondary p-3 rounded-lg font-medium flex items-center justify-center ${!selectedPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={!selectedPlan}
+            className={`w-full btn-secondary p-3 rounded-lg font-medium flex items-center justify-center ${(!selectedPlan || disabled) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!selectedPlan || disabled}
           >
             <Upload className="h-5 w-5 mr-2" />
-            {selectedPlan ? 'Adicionar fotos' : 'Escolha um plano primeiro'}
+            {!selectedPlan ? 'Escolha um plano primeiro' : disabled ? 'Carregando...' : 'Adicionar fotos'}
           </button>
         </div>
       )}

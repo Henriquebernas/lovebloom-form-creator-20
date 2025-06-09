@@ -1,8 +1,8 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FormData, ModalContent } from '@/types/index';
+import { useCouples } from '@/hooks/useCouples';
 import PlanSelector from '@/components/PlanSelector';
 import PhotoUpload from '@/components/PhotoUpload';
 import PreviewCard from '@/components/PreviewCard';
@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { createCouple, uploadPhoto, savePhoto, loading } = useCouples();
   
   const [formData, setFormData] = useState<FormData>({
     coupleName: '',
@@ -26,6 +27,7 @@ const Index = () => {
   const [countdown, setCountdown] = useState<string>('0 anos, 0 meses, 0 dias<br>0 horas, 0 minutos, 0 segundos');
   const [showModal, setShowModal] = useState<boolean>(false);
   const [modalContent, setModalContent] = useState<ModalContent>({ title: '', message: '' });
+  const [isCreating, setIsCreating] = useState(false);
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -73,7 +75,6 @@ const Index = () => {
       setPhotoPreviews(previews);
     });
 
-    // Reset file input
     e.target.value = '';
   };
 
@@ -89,11 +90,9 @@ const Index = () => {
     setFormData(prev => ({ 
       ...prev, 
       selectedPlan: plan,
-      // Clear music URL if switching to basic plan
       musicUrl: plan === 'basic' ? '' : prev.musicUrl
     }));
     
-    // If switching to a plan with fewer photos, trim the photos array
     const newLimit = plan === 'basic' ? 2 : plan === 'premium' ? 5 : 0;
     if (formData.couplePhotos.length > newLimit) {
       const trimmedPhotos = formData.couplePhotos.slice(0, newLimit);
@@ -165,7 +164,7 @@ const Index = () => {
     };
   }, [formData.startDate, formData.startTime]);
 
-  const handleCreateSite = () => {
+  const handleCreateSite = async () => {
     if (!formData.coupleName) {
       setModalContent({ title: 'Ops!', message: 'Por favor, informe o nome do casal.' });
       setShowModal(true);
@@ -181,17 +180,60 @@ const Index = () => {
       setShowModal(true);
       return;
     }
+
+    setIsCreating(true);
     
-    navigate('/counter', {
-      state: {
-        coupleName: formData.coupleName,
-        startDate: formData.startDate,
-        startTime: formData.startTime,
-        message: formData.message,
-        photoUrls: photoPreviews.length > 0 ? photoPreviews : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"],
-        musicUrl: formData.musicUrl
+    try {
+      // Criar registro do casal no banco
+      const couple = await createCouple({
+        couple_name: formData.coupleName,
+        start_date: formData.startDate,
+        start_time: formData.startTime || null,
+        message: formData.message || null,
+        selected_plan: formData.selectedPlan as 'basic' | 'premium',
+        music_url: formData.musicUrl || null
+      });
+
+      // Upload das fotos
+      const photoUrls: string[] = [];
+      for (let i = 0; i < formData.couplePhotos.length; i++) {
+        const file = formData.couplePhotos[i];
+        const photoUrl = await uploadPhoto(file, couple.id, i + 1);
+        
+        // Salvar referência da foto no banco
+        await savePhoto({
+          couple_id: couple.id,
+          photo_url: photoUrl,
+          photo_order: i + 1,
+          file_name: file.name,
+          file_size: file.size
+        });
+        
+        photoUrls.push(photoUrl);
       }
-    });
+
+      // Navegar para a página do contador com os dados salvos
+      navigate('/counter', {
+        state: {
+          coupleId: couple.id,
+          coupleName: couple.couple_name,
+          startDate: couple.start_date,
+          startTime: couple.start_time,
+          message: couple.message,
+          photoUrls: photoUrls.length > 0 ? photoUrls : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"],
+          musicUrl: couple.music_url
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao criar site:', error);
+      setModalContent({ 
+        title: 'Erro!', 
+        message: 'Ocorreu um erro ao criar seu site. Tente novamente.' 
+      });
+      setShowModal(true);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -225,6 +267,7 @@ const Index = () => {
                     onChange={handleInputChange}
                     className="w-full p-3 input-field"
                     placeholder="Ex: João & Maria (Não use emoji)"
+                    disabled={isCreating}
                   />
                 </div>
 
@@ -241,6 +284,7 @@ const Index = () => {
                       value={formData.startDate}
                       onChange={handleInputChange}
                       className="w-full p-3 input-field"
+                      disabled={isCreating}
                     />
                   </div>
                   <div>
@@ -254,6 +298,7 @@ const Index = () => {
                       value={formData.startTime}
                       onChange={handleInputChange}
                       className="w-full p-3 input-field"
+                      disabled={isCreating}
                     />
                   </div>
                 </div>
@@ -271,6 +316,7 @@ const Index = () => {
                     onChange={handleInputChange}
                     className="w-full p-3 input-field resize-none"
                     placeholder="Escreva sua linda mensagem aqui..."
+                    disabled={isCreating}
                   />
                 </div>
 
@@ -278,6 +324,7 @@ const Index = () => {
                 <PlanSelector 
                   selectedPlan={formData.selectedPlan}
                   onPlanSelect={handlePlanSelect}
+                  disabled={isCreating}
                 />
 
                 {/* Video URL - Only shown for premium plan */}
@@ -296,6 +343,7 @@ const Index = () => {
                         onChange={handleInputChange}
                         className="w-full p-3 pl-12 input-field"
                         placeholder="https://www.youtube.com/watch?v=..."
+                        disabled={isCreating}
                       />
                     </div>
                     <p className="text-xs text-text-secondary mt-1">Cole o link do YouTube que será reproduzido como fundo do contador</p>
@@ -309,6 +357,7 @@ const Index = () => {
                   photoPreviews={photoPreviews}
                   onFileChange={handleFileChange}
                   onRemovePhoto={removePhoto}
+                  disabled={isCreating}
                 />
               </form>
             </div>
@@ -327,9 +376,10 @@ const Index = () => {
               <button
                 type="button"
                 onClick={handleCreateSite}
-                className="btn-primary w-full max-w-md mt-6 p-4 rounded-lg text-lg font-semibold"
+                disabled={isCreating || loading}
+                className="btn-primary w-full max-w-md mt-6 p-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Criar Nosso Site Personalizado
+                {isCreating ? 'Criando...' : 'Criar Nosso Site Personalizado'}
               </button>
             </div>
           </div>
