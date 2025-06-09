@@ -7,6 +7,7 @@ import PlanSelector from '@/components/PlanSelector';
 import PhotoUpload from '@/components/PhotoUpload';
 import PreviewCard from '@/components/PreviewCard';
 import Modal from '@/components/Modal';
+import EmailCaptureModal from '@/components/EmailCaptureModal';
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -27,6 +28,7 @@ const Index = () => {
   const [countdown, setCountdown] = useState<string>('0 anos, 0 meses, 0 dias<br>0 horas, 0 minutos, 0 segundos');
   const [showModal, setShowModal] = useState<boolean>(false);
   const [modalContent, setModalContent] = useState<ModalContent>({ title: '', message: '' });
+  const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState(false);
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,7 +166,7 @@ const Index = () => {
     };
   }, [formData.startDate, formData.startTime]);
 
-  const handleCreateSite = async () => {
+  const handleCreateSiteClick = () => {
     if (!formData.coupleName) {
       setModalContent({ title: 'Ops!', message: 'Por favor, informe o nome do casal.' });
       setShowModal(true);
@@ -181,6 +183,10 @@ const Index = () => {
       return;
     }
 
+    setShowEmailModal(true);
+  };
+
+  const handleEmailSubmit = async (email: string) => {
     setIsCreating(true);
     
     try {
@@ -228,7 +234,8 @@ const Index = () => {
 
       console.log('Navegando para o site do casal...');
       
-      // Navegar para a URL única do casal
+      // Fechar modal e navegar para a URL única do casal
+      setShowEmailModal(false);
       navigate(`/site/${couple.id}`, {
         state: {
           coupleId: couple.id,
@@ -248,6 +255,7 @@ const Index = () => {
         message: 'Ocorreu um erro ao criar seu site. Tente novamente.' 
       });
       setShowModal(true);
+      setShowEmailModal(false);
     } finally {
       setIsCreating(false);
     }
@@ -392,7 +400,7 @@ const Index = () => {
               />
               <button
                 type="button"
-                onClick={handleCreateSite}
+                onClick={handleCreateSiteClick}
                 disabled={isCreating || loading}
                 className="btn-primary w-full max-w-md mt-6 p-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -406,7 +414,15 @@ const Index = () => {
       {/* Footer */}
       <Footer />
 
-      {/* Modal */}
+      {/* Email Capture Modal */}
+      <EmailCaptureModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSubmit={handleEmailSubmit}
+        isLoading={isCreating}
+      />
+
+      {/* Error Modal */}
       <Modal
         isOpen={showModal}
         content={modalContent}

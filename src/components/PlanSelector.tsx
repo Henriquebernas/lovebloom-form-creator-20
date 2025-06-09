@@ -18,7 +18,7 @@ const PlanSelector = ({ selectedPlan, onPlanSelect, disabled = false }: PlanSele
         'Até 2 fotos do casal',
         'Mensagem especial',
         'QR Code para compartilhar',
-        'Acesso permanente'
+        'Um ano de acesso'
       ]
     },
     {
