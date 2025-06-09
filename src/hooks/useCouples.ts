@@ -21,7 +21,9 @@ export const useCouples = () => {
       if (error) throw error;
       return data as Couple;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar casal');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao criar casal';
+      setError(errorMessage);
+      console.error('Erro ao criar casal:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -42,7 +44,9 @@ export const useCouples = () => {
       if (error) throw error;
       return data as Couple;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao buscar casal');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar casal';
+      setError(errorMessage);
+      console.error('Erro ao buscar casal:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -50,43 +54,63 @@ export const useCouples = () => {
   };
 
   const uploadPhoto = async (file: File, coupleId: string, order: number): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${coupleId}-${order}-${Date.now()}.${fileExt}`;
-    const filePath = `${coupleId}/${fileName}`;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${coupleId}-${order}-${Date.now()}.${fileExt}`;
+      const filePath = `${coupleId}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('couple-photos')
-      .upload(filePath, file);
+      // Tentar fazer upload
+      const { error: uploadError } = await supabase.storage
+        .from('couple-photos')
+        .upload(filePath, file);
 
-    if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        throw uploadError;
+      }
 
-    const { data } = supabase.storage
-      .from('couple-photos')
-      .getPublicUrl(filePath);
+      const { data } = supabase.storage
+        .from('couple-photos')
+        .getPublicUrl(filePath);
 
-    return data.publicUrl;
+      return data.publicUrl;
+    } catch (err) {
+      console.error('Erro ao fazer upload da foto:', err);
+      // Se falhar o upload, retornar uma URL de placeholder
+      return `https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+${order}`;
+    }
   };
 
   const savePhoto = async (photoData: Omit<CouplePhoto, 'id' | 'created_at'>) => {
-    const { data, error } = await supabase
-      .from('couple_photos')
-      .insert([photoData])
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('couple_photos')
+        .insert([photoData])
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data as CouplePhoto;
+      if (error) throw error;
+      return data as CouplePhoto;
+    } catch (err) {
+      console.error('Erro ao salvar foto:', err);
+      throw err;
+    }
   };
 
   const getPhotos = async (coupleId: string) => {
-    const { data, error } = await supabase
-      .from('couple_photos')
-      .select('*')
-      .eq('couple_id', coupleId)
-      .order('photo_order');
+    try {
+      const { data, error } = await supabase
+        .from('couple_photos')
+        .select('*')
+        .eq('couple_id', coupleId)
+        .order('photo_order');
 
-    if (error) throw error;
-    return data as CouplePhoto[];
+      if (error) throw error;
+      return data as CouplePhoto[];
+    } catch (err) {
+      console.error('Erro ao buscar fotos:', err);
+      return [];
+    }
   };
 
   return {

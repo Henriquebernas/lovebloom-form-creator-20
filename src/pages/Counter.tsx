@@ -12,6 +12,7 @@ import Footer from '../components/Footer';
 
 const Counter = () => {
   const location = useLocation();
+  const { coupleId } = useParams();
   const { getCoupleById, getPhotos } = useCouples();
   const [coupleData, setCoupleData] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -22,12 +23,13 @@ const Counter = () => {
 
   useEffect(() => {
     const loadCoupleData = async () => {
-      if (state?.coupleId) {
-        // Carregar dados do banco se há um ID
+      // Se há um coupleId na URL, carregue do banco
+      if (coupleId) {
         setLoading(true);
         try {
-          const couple = await getCoupleById(state.coupleId);
-          const couplePhotos = await getPhotos(state.coupleId);
+          console.log('Carregando dados do casal:', coupleId);
+          const couple = await getCoupleById(coupleId);
+          const couplePhotos = await getPhotos(coupleId);
           
           setCoupleData({
             coupleName: couple.couple_name,
@@ -38,39 +40,49 @@ const Counter = () => {
           });
           
           setPhotos(couplePhotos.map(photo => photo.photo_url));
+          console.log('Dados carregados com sucesso');
         } catch (error) {
           console.error('Erro ao carregar dados do casal:', error);
-          // Fallback para dados do estado se houver erro
-          if (state) {
-            setCoupleData(state);
-            setPhotos(state.photoUrls || []);
-          }
+          // Fallback para dados padrão em caso de erro
+          setCoupleData({
+            coupleName: "Erro ao Carregar",
+            startDate: new Date().toISOString().split('T')[0],
+            startTime: "00:00",
+            message: "Erro ao carregar dados do casal",
+            musicUrl: ""
+          });
+          setPhotos(["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Erro+ao+Carregar"]);
         } finally {
           setLoading(false);
         }
-      } else if (state) {
-        // Usar dados do estado se não há ID (para preview)
+      } 
+      // Se há dados do estado (navegação direta), use-os
+      else if (state) {
+        console.log('Usando dados do estado:', state);
         setCoupleData(state);
         setPhotos(state.photoUrls || []);
+      }
+      // Fallback para dados padrão
+      else {
+        console.log('Usando dados padrão');
+        setCoupleData({
+          coupleName: "André & Carol",
+          startDate: "2020-03-11",
+          startTime: "12:35",
+          message: "Eu te amo! E eu amo passar meu tempo com você! Contando nosso tempo juntos para sempre!",
+          musicUrl: ""
+        });
+        setPhotos(["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"]);
       }
     };
 
     loadCoupleData();
-  }, [state, getCoupleById, getPhotos]);
+  }, [coupleId, state, getCoupleById, getPhotos]);
 
-  // Dados padrão para fallback
-  const defaultData = {
-    coupleName: "André & Carol",
-    startDate: "2020-03-11",
-    startTime: "12:35",
-    message: "Eu te amo! E eu amo passar meu tempo com você! Contando nosso tempo juntos para sempre!",
-    musicUrl: ""
-  };
-
-  const data = coupleData || defaultData;
-  const displayPhotos = photos.length > 0 ? photos : ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"];
-  const videoId = extractYouTubeVideoId(data.musicUrl);
-  const countdown = useCountdown(data.startDate, data.startTime);
+  const data = coupleData;
+  const displayPhotos = photos.length > 0 ? photos : ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Sem+Fotos"];
+  const videoId = data ? extractYouTubeVideoId(data.musicUrl) : null;
+  const countdown = useCountdown(data?.startDate || '', data?.startTime || '');
 
   // Gerar URL da página atual
   const currentPageUrl = window.location.href;
@@ -79,6 +91,14 @@ const Counter = () => {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-white text-xl">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+        <div className="text-white text-xl">Nenhum dado encontrado</div>
       </div>
     );
   }

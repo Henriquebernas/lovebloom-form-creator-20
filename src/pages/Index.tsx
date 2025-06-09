@@ -184,6 +184,8 @@ const Index = () => {
     setIsCreating(true);
     
     try {
+      console.log('Iniciando criação do casal...');
+      
       // Criar registro do casal no banco
       const couple = await createCouple({
         couple_name: formData.coupleName,
@@ -194,36 +196,51 @@ const Index = () => {
         music_url: formData.musicUrl || null
       });
 
-      // Upload das fotos
+      console.log('Casal criado com ID:', couple.id);
+
+      // Upload das fotos (com fallback em caso de erro)
       const photoUrls: string[] = [];
       for (let i = 0; i < formData.couplePhotos.length; i++) {
-        const file = formData.couplePhotos[i];
-        const photoUrl = await uploadPhoto(file, couple.id, i + 1);
-        
-        // Salvar referência da foto no banco
-        await savePhoto({
-          couple_id: couple.id,
-          photo_url: photoUrl,
-          photo_order: i + 1,
-          file_name: file.name,
-          file_size: file.size
-        });
-        
-        photoUrls.push(photoUrl);
+        try {
+          const file = formData.couplePhotos[i];
+          console.log(`Fazendo upload da foto ${i + 1}...`);
+          
+          const photoUrl = await uploadPhoto(file, couple.id, i + 1);
+          
+          // Salvar referência da foto no banco
+          await savePhoto({
+            couple_id: couple.id,
+            photo_url: photoUrl,
+            photo_order: i + 1,
+            file_name: file.name,
+            file_size: file.size
+          });
+          
+          photoUrls.push(photoUrl);
+          console.log(`Foto ${i + 1} salva com sucesso`);
+        } catch (photoError) {
+          console.error(`Erro no upload da foto ${i + 1}:`, photoError);
+          // Continuar mesmo se uma foto falhar
+          const fallbackUrl = `https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+${i + 1}`;
+          photoUrls.push(fallbackUrl);
+        }
       }
 
-      // Navegar para a página do contador com os dados salvos
-      navigate('/counter', {
+      console.log('Navegando para o site do casal...');
+      
+      // Navegar para a URL única do casal
+      navigate(`/site/${couple.id}`, {
         state: {
           coupleId: couple.id,
           coupleName: couple.couple_name,
           startDate: couple.start_date,
           startTime: couple.start_time,
           message: couple.message,
-          photoUrls: photoUrls.length > 0 ? photoUrls : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+9:16"],
+          photoUrls: photoUrls.length > 0 ? photoUrls : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Sem+Fotos"],
           musicUrl: couple.music_url
         }
       });
+
     } catch (error) {
       console.error('Erro ao criar site:', error);
       setModalContent({ 
