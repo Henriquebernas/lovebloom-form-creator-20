@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Couple, CouplePhoto } from '@/types/database';
 
@@ -7,7 +7,7 @@ export const useCouples = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createCouple = async (coupleData: Omit<Couple, 'id' | 'created_at' | 'updated_at'>) => {
+  const createCouple = useCallback(async (coupleData: Omit<Couple, 'id' | 'created_at' | 'updated_at'>) => {
     setLoading(true);
     setError(null);
     
@@ -28,9 +28,9 @@ export const useCouples = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getCoupleById = async (id: string) => {
+  const getCoupleById = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     
@@ -51,9 +51,9 @@ export const useCouples = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const uploadPhoto = async (file: File, coupleId: string, order: number): Promise<string> => {
+  const uploadPhoto = useCallback(async (file: File, coupleId: string, order: number): Promise<string> => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${coupleId}-${order}-${Date.now()}.${fileExt}`;
@@ -79,9 +79,9 @@ export const useCouples = () => {
       // Se falhar o upload, retornar uma URL de placeholder
       return `https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+${order}`;
     }
-  };
+  }, []);
 
-  const savePhoto = async (photoData: Omit<CouplePhoto, 'id' | 'created_at'>) => {
+  const savePhoto = useCallback(async (photoData: Omit<CouplePhoto, 'id' | 'created_at'>) => {
     try {
       const { data, error } = await supabase
         .from('couple_photos')
@@ -95,9 +95,9 @@ export const useCouples = () => {
       console.error('Erro ao salvar foto:', err);
       throw err;
     }
-  };
+  }, []);
 
-  const getPhotos = async (coupleId: string) => {
+  const getPhotos = useCallback(async (coupleId: string) => {
     try {
       const { data, error } = await supabase
         .from('couple_photos')
@@ -111,7 +111,7 @@ export const useCouples = () => {
       console.error('Erro ao buscar fotos:', err);
       return [];
     }
-  };
+  }, []);
 
   return {
     loading,

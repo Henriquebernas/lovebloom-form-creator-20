@@ -1,4 +1,3 @@
-
 import { useLocation, Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { extractYouTubeVideoId } from '../utils/youtubeUtils';
@@ -17,11 +16,15 @@ const Counter = () => {
   const [coupleData, setCoupleData] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   
   // Dados do estado passado pela navegação (para novos casais)
   const state = location.state as any;
 
   useEffect(() => {
+    // Evitar múltiplas execuções se os dados já foram carregados
+    if (dataLoaded) return;
+
     const loadCoupleData = async () => {
       // Se há um coupleId na URL, carregue do banco
       if (coupleId) {
@@ -54,6 +57,7 @@ const Counter = () => {
           setPhotos(["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Erro+ao+Carregar"]);
         } finally {
           setLoading(false);
+          setDataLoaded(true);
         }
       } 
       // Se há dados do estado (navegação direta), use-os
@@ -61,6 +65,7 @@ const Counter = () => {
         console.log('Usando dados do estado:', state);
         setCoupleData(state);
         setPhotos(state.photoUrls || []);
+        setDataLoaded(true);
       }
       // Fallback para dados padrão
       else {
@@ -73,11 +78,12 @@ const Counter = () => {
           musicUrl: ""
         });
         setPhotos(["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Andr%C3%A9+%26+Carol+9:16"]);
+        setDataLoaded(true);
       }
     };
 
     loadCoupleData();
-  }, [coupleId, state, getCoupleById, getPhotos]);
+  }, [coupleId, state, getCoupleById, getPhotos, dataLoaded]);
 
   const data = coupleData;
   const displayPhotos = photos.length > 0 ? photos : ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Sem+Fotos"];
