@@ -247,19 +247,15 @@ const Index = () => {
         }
       }
 
-      console.log('Navegando para o site do casal...');
+      console.log('Redirecionando para pagamento...');
       
-      // Fechar modal e navegar para a URL única do casal usando o slug
+      // Fechar modal e navegar para a página de pagamento
       setShowEmailModal(false);
-      navigate(`/${couple.url_slug}`, {
+      navigate('/payment', {
         state: {
           coupleId: couple.id,
           coupleName: couple.couple_name,
-          startDate: couple.start_date,
-          startTime: couple.start_time,
-          message: couple.message,
-          photoUrls: photoUrls.length > 0 ? photoUrls : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Sem+Fotos"],
-          musicUrl: couple.music_url,
+          selectedPlan: couple.selected_plan,
           urlSlug: couple.url_slug
         }
       });
