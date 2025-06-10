@@ -167,6 +167,7 @@ export type Database = {
           created_at: string
           currency: string
           external_reference: string | null
+          form_data: Json | null
           id: string
           mercado_pago_payment_id: string | null
           mercado_pago_status: string | null
@@ -183,6 +184,7 @@ export type Database = {
           created_at?: string
           currency?: string
           external_reference?: string | null
+          form_data?: Json | null
           id?: string
           mercado_pago_payment_id?: string | null
           mercado_pago_status?: string | null
@@ -199,6 +201,7 @@ export type Database = {
           created_at?: string
           currency?: string
           external_reference?: string | null
+          form_data?: Json | null
           id?: string
           mercado_pago_payment_id?: string | null
           mercado_pago_status?: string | null
