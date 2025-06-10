@@ -229,7 +229,7 @@ const Index = () => {
       // Criar pagamento com todos os dados do formulário
       const result = await createPayment.mutateAsync({
         coupleId: 'temp', // Será criado após pagamento
-        planType: formData.selectedPlan as 'basic' | premium',
+        planType: formData.selectedPlan as 'basic' | 'premium',
         amount: planAmounts[formData.selectedPlan as keyof typeof planAmounts],
         coupleName: formData.coupleName,
         formData: {
