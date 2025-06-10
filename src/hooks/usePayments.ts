@@ -15,17 +15,30 @@ export const usePayments = () => {
 
   const createPayment = useMutation({
     mutationFn: async (data: CreatePaymentData) => {
+      console.log('Criando pagamento com dados:', data);
+      
       const { data: result, error } = await supabase.functions.invoke('create-mercado-pago-payment', {
         body: data
       });
 
+      console.log('Resposta da função:', result, 'Erro:', error);
+
       if (error) {
-        throw new Error(error.message);
+        console.error('Erro na função edge:', error);
+        throw new Error(error.message || 'Erro ao criar pagamento');
+      }
+
+      if (!result) {
+        throw new Error('Nenhum resultado retornado da função');
       }
 
       return result;
     },
+    onSuccess: (data) => {
+      console.log('Pagamento criado com sucesso:', data);
+    },
     onError: (error) => {
+      console.error('Erro ao criar pagamento:', error);
       toast({
         title: "Erro ao criar pagamento",
         description: error.message,
