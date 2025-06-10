@@ -9,11 +9,12 @@ import PreviewCard from '@/components/PreviewCard';
 import Modal from '@/components/Modal';
 import EmailCaptureModal from '@/components/EmailCaptureModal';
 import Footer from '@/components/Footer';
-import { toast } from 'react-toastify';
-import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { createCouple, uploadPhoto, savePhoto, loading } = useCouples();
   
   const [formData, setFormData] = useState<FormData>({

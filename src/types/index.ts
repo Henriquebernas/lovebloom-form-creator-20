@@ -7,6 +7,8 @@ export interface FormData {
   selectedPlan: string;
   couplePhotos: File[];
   musicUrl: string;
+  email: string;
+  urlSlug: string;
 }
 
 export interface ModalContent {
