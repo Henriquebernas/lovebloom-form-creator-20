@@ -89,13 +89,87 @@ export type Database = {
         }
         Relationships: []
       }
+      mercado_pago_preferences: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          init_point: string
+          payment_id: string
+          preference_id: string
+          sandbox_init_point: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          init_point: string
+          payment_id: string
+          preference_id: string
+          sandbox_init_point?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          init_point?: string
+          payment_id?: string
+          preference_id?: string
+          sandbox_init_point?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mercado_pago_preferences_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mercado_pago_webhooks: {
+        Row: {
+          created_at: string
+          id: string
+          merchant_order_id: string | null
+          payment_id: string | null
+          processed: boolean | null
+          raw_data: Json
+          topic: string | null
+          webhook_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          merchant_order_id?: string | null
+          payment_id?: string | null
+          processed?: boolean | null
+          raw_data: Json
+          topic?: string | null
+          webhook_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          merchant_order_id?: string | null
+          payment_id?: string | null
+          processed?: boolean | null
+          raw_data?: Json
+          topic?: string | null
+          webhook_id?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
           couple_id: string
           created_at: string
           currency: string
+          external_reference: string | null
           id: string
+          mercado_pago_payment_id: string | null
+          mercado_pago_status: string | null
           payment_method: string | null
           plan_type: string
           status: string
@@ -108,7 +182,10 @@ export type Database = {
           couple_id: string
           created_at?: string
           currency?: string
+          external_reference?: string | null
           id?: string
+          mercado_pago_payment_id?: string | null
+          mercado_pago_status?: string | null
           payment_method?: string | null
           plan_type: string
           status?: string
@@ -121,7 +198,10 @@ export type Database = {
           couple_id?: string
           created_at?: string
           currency?: string
+          external_reference?: string | null
           id?: string
+          mercado_pago_payment_id?: string | null
+          mercado_pago_status?: string | null
           payment_method?: string | null
           plan_type?: string
           status?: string

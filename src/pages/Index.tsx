@@ -9,6 +9,8 @@ import PreviewCard from '@/components/PreviewCard';
 import Modal from '@/components/Modal';
 import EmailCaptureModal from '@/components/EmailCaptureModal';
 import Footer from '@/components/Footer';
+import { toast } from 'react-toastify';
+import { supabase } from '@/lib/supabase';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,6 +24,8 @@ const Index = () => {
     selectedPlan: '',
     couplePhotos: [],
     musicUrl: '',
+    email: '',
+    urlSlug: ''
   });
 
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
@@ -30,6 +34,7 @@ const Index = () => {
   const [modalContent, setModalContent] = useState<ModalContent>({ title: '', message: '' });
   const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -274,6 +279,55 @@ const Index = () => {
       setShowEmailModal(false);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.coupleName || !formData.startDate) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const coupleData = {
+        couple_name: formData.coupleName.charAt(0).toUpperCase() + formData.coupleName.slice(1),
+        start_date: formData.startDate,
+        start_time: formData.startTime || null,
+        message: formData.message || null,
+        selected_plan: formData.selectedPlan,
+        music_url: formData.musicUrl || null,
+        email: formData.email || null,
+        url_slug: formData.urlSlug || null
+      };
+
+      const { data: couple, error } = await supabase
+        .from('couples')
+        .insert(coupleData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Redirecionar para a página de pagamento
+      navigate(`/payment/${couple.id}`);
+
+    } catch (error) {
+      console.error('Erro ao criar casal:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar seu site. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
