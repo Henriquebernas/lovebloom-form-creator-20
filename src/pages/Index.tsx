@@ -1,8 +1,8 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FormData, ModalContent } from '@/types/index';
-import { useCouples } from '@/hooks/useCouples';
 import PlanSelector from '@/components/PlanSelector';
 import PhotoUpload from '@/components/PhotoUpload';
 import PreviewCard from '@/components/PreviewCard';
@@ -10,12 +10,12 @@ import Modal from '@/components/Modal';
 import EmailCaptureModal from '@/components/EmailCaptureModal';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { usePayments } from '@/hooks/usePayments';
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { createCouple, uploadPhoto, savePhoto, loading } = useCouples();
+  const { createPayment } = usePayments();
   
   const [formData, setFormData] = useState<FormData>({
     coupleName: '',
@@ -35,7 +35,6 @@ const Index = () => {
   const [modalContent, setModalContent] = useState<ModalContent>({ title: '', message: '' });
   const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -209,126 +208,57 @@ const Index = () => {
     setIsCreating(true);
     
     try {
-      console.log('Iniciando criação do casal...');
+      console.log('Iniciando processo de pagamento...');
       
-      // Criar registro do casal no banco com email
-      const couple = await createCouple({
-        couple_name: formData.coupleName,
-        start_date: formData.startDate,
-        start_time: formData.startTime || null,
-        message: formData.message || null,
-        selected_plan: formData.selectedPlan as 'basic' | 'premium',
-        music_url: formData.musicUrl || null,
-        email: email
-      });
-
-      console.log('Casal criado com ID:', couple.id);
-      console.log('URL slug gerado:', couple.url_slug);
-
-      // Upload das fotos (com fallback em caso de erro)
-      const photoUrls: string[] = [];
-      for (let i = 0; i < formData.couplePhotos.length; i++) {
-        try {
-          const file = formData.couplePhotos[i];
-          console.log(`Fazendo upload da foto ${i + 1}...`);
-          
-          const photoUrl = await uploadPhoto(file, couple.id, i + 1);
-          
-          // Salvar referência da foto no banco
-          await savePhoto({
-            couple_id: couple.id,
-            photo_url: photoUrl,
-            photo_order: i + 1,
-            file_name: file.name,
-            file_size: file.size
+      // Converter fotos para base64 para enviar no payload
+      const photosBase64 = await Promise.all(
+        formData.couplePhotos.map(async (file) => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(file);
           });
-          
-          photoUrls.push(photoUrl);
-          console.log(`Foto ${i + 1} salva com sucesso`);
-        } catch (photoError) {
-          console.error(`Erro no upload da foto ${i + 1}:`, photoError);
-          // Continuar mesmo se uma foto falhar
-          const fallbackUrl = `https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+${i + 1}`;
-          photoUrls.push(fallbackUrl);
-        }
-      }
+        })
+      );
 
-      console.log('Navegando para o site do casal...');
-      
-      // Fechar modal e navegar para a URL única do casal usando o slug
-      setShowEmailModal(false);
-      navigate(`/${couple.url_slug}`, {
-        state: {
-          coupleId: couple.id,
-          coupleName: couple.couple_name,
-          startDate: couple.start_date,
-          startTime: couple.start_time,
-          message: couple.message,
-          photoUrls: photoUrls.length > 0 ? photoUrls : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Sem+Fotos"],
-          musicUrl: couple.music_url,
-          urlSlug: couple.url_slug
+      const planAmounts = {
+        basic: 1990, // R$ 19,90 em centavos
+        premium: 2990 // R$ 29,90 em centavos
+      };
+
+      // Criar pagamento com todos os dados do formulário
+      const result = await createPayment.mutateAsync({
+        coupleId: 'temp', // Será criado após pagamento
+        planType: formData.selectedPlan as 'basic' | premium',
+        amount: planAmounts[formData.selectedPlan as keyof typeof planAmounts],
+        coupleName: formData.coupleName,
+        formData: {
+          coupleName: formData.coupleName,
+          startDate: formData.startDate,
+          startTime: formData.startTime,
+          message: formData.message,
+          selectedPlan: formData.selectedPlan,
+          musicUrl: formData.musicUrl,
+          email: email,
+          photosBase64: photosBase64
         }
       });
+
+      console.log('Redirecionando para o Mercado Pago...');
+      
+      // Redirecionar para o Mercado Pago
+      window.location.href = result.init_point;
 
     } catch (error) {
-      console.error('Erro ao criar site:', error);
+      console.error('Erro ao criar pagamento:', error);
       setModalContent({ 
         title: 'Erro!', 
-        message: 'Ocorreu um erro ao criar seu site. Tente novamente.' 
+        message: 'Ocorreu um erro ao processar o pagamento. Tente novamente.' 
       });
       setShowModal(true);
       setShowEmailModal(false);
     } finally {
       setIsCreating(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.coupleName || !formData.startDate) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const coupleData = {
-        couple_name: formData.coupleName.charAt(0).toUpperCase() + formData.coupleName.slice(1),
-        start_date: formData.startDate,
-        start_time: formData.startTime || null,
-        message: formData.message || null,
-        selected_plan: formData.selectedPlan,
-        music_url: formData.musicUrl || null,
-        email: formData.email || null,
-        url_slug: formData.urlSlug || null
-      };
-
-      const { data: couple, error } = await supabase
-        .from('couples')
-        .insert(coupleData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Redirecionar para a página de pagamento
-      navigate(`/payment/${couple.id}`);
-
-    } catch (error) {
-      console.error('Erro ao criar casal:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar seu site. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -472,10 +402,10 @@ const Index = () => {
               <button
                 type="button"
                 onClick={handleCreateSiteClick}
-                disabled={isCreating || loading}
+                disabled={isCreating}
                 className="btn-primary w-full max-w-md mt-6 p-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isCreating ? 'Criando...' : 'Criar Nosso Site Personalizado'}
+                {isCreating ? 'Processando...' : 'Criar Nosso Site Personalizado'}
               </button>
             </div>
           </div>

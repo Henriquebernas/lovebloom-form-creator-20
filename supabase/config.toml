@@ -1,1 +1,8 @@
+
 project_id = "curgukttyfrhvwokjtxb"
+
+[functions.mercado-pago-webhook]
+verify_jwt = false
+
+[functions.create-mercado-pago-payment]
+verify_jwt = false

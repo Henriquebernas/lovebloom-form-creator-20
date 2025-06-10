@@ -19,9 +19,9 @@ serve(async (req) => {
   );
 
   try {
-    const { coupleId, planType, amount, coupleName } = await req.json();
+    const { coupleId, planType, amount, coupleName, formData } = await req.json();
 
-    if (!coupleId || !planType || !amount) {
+    if (!planType || !amount || !coupleName) {
       return new Response("Missing required fields", { status: 400, headers: corsHeaders });
     }
 
@@ -31,18 +31,20 @@ serve(async (req) => {
     }
 
     // Gerar external_reference único
-    const externalReference = `couple_${coupleId}_${Date.now()}`;
+    const externalReference = `couple_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-    // Criar pagamento no banco de dados
+    // Criar pagamento no banco de dados com os dados do formulário
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .insert({
-        couple_id: coupleId,
+        couple_id: null, // Será preenchido após o pagamento
         amount: amount,
         currency: 'brl',
         status: 'pending',
         plan_type: planType,
-        external_reference: externalReference
+        external_reference: externalReference,
+        // Armazenar dados do formulário como JSONB para usar no webhook
+        form_data: formData
       })
       .select()
       .single();

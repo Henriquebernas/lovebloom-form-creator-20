@@ -8,6 +8,16 @@ interface CreatePaymentData {
   planType: 'basic' | 'premium';
   amount: number;
   coupleName: string;
+  formData?: {
+    coupleName: string;
+    startDate: string;
+    startTime: string;
+    message: string;
+    selectedPlan: string;
+    musicUrl: string;
+    email: string;
+    photosBase64: string[];
+  };
 }
 
 export const usePayments = () => {
