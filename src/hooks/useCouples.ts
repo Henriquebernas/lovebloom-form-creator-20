@@ -7,14 +7,49 @@ export const useCouples = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createCouple = useCallback(async (coupleData: Omit<Couple, 'id' | 'created_at' | 'updated_at'>) => {
+  const generateUrlSlug = (coupleName: string): string => {
+    return coupleName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+      .trim()
+      .replace(/\s+/g, '-') // Substitui espaços por hífens
+      .replace(/-+/g, '-') // Remove hífens duplicados
+      .replace(/^-+|-+$/g, '') || 'casal'; // Remove hífens no início/fim
+  };
+
+  const createCouple = useCallback(async (
+    coupleData: Omit<Couple, 'id' | 'created_at' | 'updated_at'> & { email: string }
+  ) => {
     setLoading(true);
     setError(null);
     
     try {
+      // Gerar slug único baseado no nome do casal
+      let baseSlug = generateUrlSlug(coupleData.couple_name);
+      let urlSlug = baseSlug;
+      let counter = 1;
+
+      // Verificar se o slug já existe e incrementar se necessário
+      while (true) {
+        const { data: existing } = await supabase
+          .from('couples')
+          .select('id')
+          .eq('url_slug', urlSlug)
+          .single();
+
+        if (!existing) {
+          break; // Slug disponível
+        }
+
+        urlSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+
       const { data, error } = await supabase
         .from('couples')
-        .insert([coupleData])
+        .insert([{ ...coupleData, url_slug: urlSlug }])
         .select()
         .single();
 

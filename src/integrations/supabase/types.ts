@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           couple_name: string
           created_at: string
+          email: string | null
           id: string
           message: string | null
           music_url: string | null
@@ -58,10 +59,12 @@ export type Database = {
           start_date: string
           start_time: string | null
           updated_at: string
+          url_slug: string | null
         }
         Insert: {
           couple_name: string
           created_at?: string
+          email?: string | null
           id?: string
           message?: string | null
           music_url?: string | null
@@ -69,10 +72,12 @@ export type Database = {
           start_date: string
           start_time?: string | null
           updated_at?: string
+          url_slug?: string | null
         }
         Update: {
           couple_name?: string
           created_at?: string
+          email?: string | null
           id?: string
           message?: string | null
           music_url?: string | null
@@ -80,6 +85,7 @@ export type Database = {
           start_date?: string
           start_time?: string | null
           updated_at?: string
+          url_slug?: string | null
         }
         Relationships: []
       }

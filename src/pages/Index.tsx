@@ -192,17 +192,19 @@ const Index = () => {
     try {
       console.log('Iniciando criação do casal...');
       
-      // Criar registro do casal no banco
+      // Criar registro do casal no banco com email
       const couple = await createCouple({
         couple_name: formData.coupleName,
         start_date: formData.startDate,
         start_time: formData.startTime || null,
         message: formData.message || null,
         selected_plan: formData.selectedPlan as 'basic' | 'premium',
-        music_url: formData.musicUrl || null
+        music_url: formData.musicUrl || null,
+        email: email
       });
 
       console.log('Casal criado com ID:', couple.id);
+      console.log('URL slug gerado:', couple.url_slug);
 
       // Upload das fotos (com fallback em caso de erro)
       const photoUrls: string[] = [];
@@ -244,7 +246,8 @@ const Index = () => {
           startTime: couple.start_time,
           message: couple.message,
           photoUrls: photoUrls.length > 0 ? photoUrls : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Sem+Fotos"],
-          musicUrl: couple.music_url
+          musicUrl: couple.music_url,
+          urlSlug: couple.url_slug
         }
       });
 

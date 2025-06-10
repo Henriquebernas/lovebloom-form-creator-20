@@ -1,4 +1,3 @@
-
 export interface Couple {
   id: string;
   couple_name: string;
@@ -7,6 +6,8 @@ export interface Couple {
   message?: string;
   selected_plan: 'basic' | 'premium';
   music_url?: string;
+  email?: string;
+  url_slug?: string;
   created_at: string;
   updated_at: string;
 }
