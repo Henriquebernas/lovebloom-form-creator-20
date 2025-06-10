@@ -163,7 +163,7 @@ export type Database = {
       payments: {
         Row: {
           amount: number
-          couple_id: string
+          couple_id: string | null
           created_at: string
           currency: string
           external_reference: string | null
@@ -180,7 +180,7 @@ export type Database = {
         }
         Insert: {
           amount: number
-          couple_id: string
+          couple_id?: string | null
           created_at?: string
           currency?: string
           external_reference?: string | null
@@ -197,7 +197,7 @@ export type Database = {
         }
         Update: {
           amount?: number
-          couple_id?: string
+          couple_id?: string | null
           created_at?: string
           currency?: string
           external_reference?: string | null
