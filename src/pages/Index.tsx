@@ -286,7 +286,7 @@ const Index = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.coupleName || !formData.startDate || !formData.selectedPlan) {
+    if (!formData.coupleName || !formData.startDate) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -296,7 +296,6 @@ const Index = () => {
     }
 
     setIsLoading(true);
-    console.log('Criando casal com dados:', formData);
 
     try {
       const coupleData = {
@@ -310,20 +309,13 @@ const Index = () => {
         url_slug: formData.urlSlug || null
       };
 
-      console.log('Inserindo casal no banco:', coupleData);
-
       const { data: couple, error } = await supabase
         .from('couples')
         .insert(coupleData)
         .select()
         .single();
 
-      if (error) {
-        console.error('Erro ao criar casal:', error);
-        throw error;
-      }
-
-      console.log('Casal criado com sucesso:', couple);
+      if (error) throw error;
 
       // Redirecionar para a página de pagamento
       navigate(`/payment/${couple.id}`);
@@ -483,19 +475,8 @@ const Index = () => {
                 disabled={isCreating || loading}
                 className="btn-primary w-full max-w-md mt-6 p-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isCreating ? 'Criando...' : 'Criar Site (Demonstração)'}
+                {isCreating ? 'Criando...' : 'Criar Nosso Site Personalizado'}
               </button>
-              
-              <div className="mt-4 w-full max-w-md">
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Processando...' : 'Pagar Agora'}
-                </button>
-              </div>
             </div>
           </div>
         </div>

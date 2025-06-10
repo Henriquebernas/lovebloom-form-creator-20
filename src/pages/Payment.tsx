@@ -13,14 +13,10 @@ const Payment = () => {
   const { createPayment } = usePayments();
   const { toast } = useToast();
 
-  console.log('Payment page - coupleId:', coupleId);
-
-  const { data: couple, isLoading, error } = useQuery({
+  const { data: couple, isLoading } = useQuery({
     queryKey: ['couple', coupleId],
     queryFn: async () => {
       if (!coupleId) throw new Error('ID do casal não encontrado');
-      
-      console.log('Buscando casal com ID:', coupleId);
       
       const { data, error } = await supabase
         .from('couples')
@@ -28,76 +24,30 @@ const Payment = () => {
         .eq('id', coupleId)
         .single();
 
-      if (error) {
-        console.error('Erro ao buscar casal:', error);
-        throw error;
-      }
-      
-      console.log('Casal encontrado:', data);
+      if (error) throw error;
       return data;
     },
     enabled: !!coupleId
   });
 
   const handlePaymentClick = async (planType: string) => {
-    console.log('Clicou em pagamento para plano:', planType);
-    
-    if (!couple) {
-      console.error('Casal não encontrado para pagamento');
-      toast({
-        title: "Erro",
-        description: "Casal não encontrado",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!couple) return;
 
     const planAmounts = {
       basic: 1990, // R$ 19,90 em centavos
       premium: 2990 // R$ 29,90 em centavos
     };
 
-    const amount = planAmounts[planType as keyof typeof planAmounts];
-    
-    if (!amount) {
-      console.error('Plano inválido:', planType);
-      toast({
-        title: "Erro",
-        description: "Plano inválido selecionado",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('Criando pagamento:', {
-      coupleId: couple.id,
-      planType,
-      amount,
-      coupleName: couple.couple_name
-    });
-
     try {
       const result = await createPayment.mutateAsync({
         coupleId: couple.id,
         planType: planType as 'basic' | 'premium',
-        amount: amount,
+        amount: planAmounts[planType as keyof typeof planAmounts],
         coupleName: couple.couple_name
       });
 
-      console.log('Resultado do pagamento:', result);
-
-      if (result && result.init_point) {
-        console.log('Redirecionando para:', result.init_point);
-        // Redirecionar para o Mercado Pago
-        window.location.href = result.init_point;
-      } else {
-        console.error('init_point não encontrado no resultado:', result);
-        toast({
-          title: "Erro",
-          description: "Erro ao obter link de pagamento",
-          variant: "destructive"
-        });
-      }
+      // Redirecionar para o Mercado Pago
+      window.location.href = result.init_point;
     } catch (error) {
       console.error('Erro ao criar pagamento:', error);
     }
@@ -111,13 +61,11 @@ const Payment = () => {
     );
   }
 
-  if (error || !couple) {
-    console.error('Erro ou casal não encontrado:', error);
+  if (!couple) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-900 to-red-900 flex items-center justify-center">
         <div className="text-white text-center">
           <h1 className="text-2xl font-bold mb-4">Casal não encontrado</h1>
-          <p className="mb-4">{error?.message || 'Casal não encontrado'}</p>
           <button 
             onClick={() => navigate('/')}
             className="bg-neon-pink hover:bg-neon-pink/80 text-white px-6 py-2 rounded-lg"

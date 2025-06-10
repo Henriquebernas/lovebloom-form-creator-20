@@ -19,34 +19,21 @@ serve(async (req) => {
   );
 
   try {
-    console.log('Iniciando criação de pagamento...');
-    
     const { coupleId, planType, amount, coupleName } = await req.json();
-    
-    console.log('Dados recebidos:', { coupleId, planType, amount, coupleName });
 
     if (!coupleId || !planType || !amount) {
-      console.error('Campos obrigatórios ausentes:', { coupleId, planType, amount });
-      return new Response(JSON.stringify({ error: "Missing required fields" }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+      return new Response("Missing required fields", { status: 400, headers: corsHeaders });
     }
 
     const mpAccessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
     if (!mpAccessToken) {
-      console.error("MERCADO_PAGO_ACCESS_TOKEN não configurado");
       throw new Error("Mercado Pago access token não configurado");
     }
 
-    console.log('Token MP encontrado:', mpAccessToken ? 'Sim' : 'Não');
-
     // Gerar external_reference único
     const externalReference = `couple_${coupleId}_${Date.now()}`;
-    console.log('External reference gerado:', externalReference);
 
     // Criar pagamento no banco de dados
-    console.log('Criando pagamento no banco...');
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .insert({
@@ -61,14 +48,9 @@ serve(async (req) => {
       .single();
 
     if (paymentError) {
-      console.error("Erro ao criar pagamento no banco:", paymentError);
-      return new Response(JSON.stringify({ error: "Error creating payment" }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+      console.error("Erro ao criar pagamento:", paymentError);
+      return new Response("Error creating payment", { status: 500, headers: corsHeaders });
     }
-
-    console.log('Pagamento criado no banco com ID:', payment.id);
 
     // Criar preferência no Mercado Pago
     const preference = {
@@ -94,8 +76,6 @@ serve(async (req) => {
       }
     };
 
-    console.log('Criando preferência no MP:', JSON.stringify(preference, null, 2));
-
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
@@ -105,22 +85,16 @@ serve(async (req) => {
       body: JSON.stringify(preference)
     });
 
-    console.log('Resposta do MP status:', mpResponse.status);
-
     if (!mpResponse.ok) {
       const errorText = await mpResponse.text();
       console.error("Erro do Mercado Pago:", errorText);
-      return new Response(JSON.stringify({ error: "Error creating preference", details: errorText }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+      return new Response("Error creating preference", { status: 500, headers: corsHeaders });
     }
 
     const mpPreference = await mpResponse.json();
-    console.log('Preferência criada:', mpPreference);
 
     // Salvar preferência no banco
-    const { error: prefError } = await supabaseClient
+    await supabaseClient
       .from('mercado_pago_preferences')
       .insert({
         payment_id: payment.id,
@@ -129,26 +103,18 @@ serve(async (req) => {
         sandbox_init_point: mpPreference.sandbox_init_point
       });
 
-    if (prefError) {
-      console.error('Erro ao salvar preferência:', prefError);
-    }
-
-    const result = {
+    return new Response(JSON.stringify({
       payment_id: payment.id,
       preference_id: mpPreference.id,
       init_point: mpPreference.init_point,
       sandbox_init_point: mpPreference.sandbox_init_point
-    };
-
-    console.log('Retornando resultado:', result);
-
-    return new Response(JSON.stringify(result), {
+    }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error("Erro geral:", error);
+    console.error("Erro:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
