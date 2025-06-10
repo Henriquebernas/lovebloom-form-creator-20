@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FormData, ModalContent } from '@/types/index';
-import { useCouples } from '@/hooks/useCouples';
+import { usePayments } from '@/hooks/usePayments';
 import PlanSelector from '@/components/PlanSelector';
 import PhotoUpload from '@/components/PhotoUpload';
 import PreviewCard from '@/components/PreviewCard';
@@ -10,12 +11,11 @@ import Modal from '@/components/Modal';
 import EmailCaptureModal from '@/components/EmailCaptureModal';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { createCouple, uploadPhoto, savePhoto, loading } = useCouples();
+  const { createPayment } = usePayments();
   
   const [formData, setFormData] = useState<FormData>({
     coupleName: '',
@@ -34,8 +34,7 @@ const Index = () => {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [modalContent, setModalContent] = useState<ModalContent>({ title: '', message: '' });
   const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -185,7 +184,7 @@ const Index = () => {
     };
   }, [formData.startDate, formData.startTime]);
 
-  const handleCreateSiteClick = () => {
+  const handlePaymentClick = () => {
     if (!formData.coupleName) {
       setModalContent({ title: 'Ops!', message: 'Por favor, informe o nome do casal.' });
       setShowModal(true);
@@ -206,129 +205,43 @@ const Index = () => {
   };
 
   const handleEmailSubmit = async (email: string) => {
-    setIsCreating(true);
+    setIsCreatingPayment(true);
     
     try {
-      console.log('Iniciando criação do casal...');
+      console.log('Iniciando processo de pagamento...');
       
-      // Criar registro do casal no banco com email
-      const couple = await createCouple({
-        couple_name: formData.coupleName,
-        start_date: formData.startDate,
-        start_time: formData.startTime || null,
-        message: formData.message || null,
-        selected_plan: formData.selectedPlan as 'basic' | 'premium',
-        music_url: formData.musicUrl || null,
+      const planAmounts = {
+        basic: 1990, // R$ 19,90 em centavos
+        premium: 2990 // R$ 29,90 em centavos
+      };
+
+      const result = await createPayment.mutateAsync({
+        coupleName: formData.coupleName,
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        message: formData.message,
+        planType: formData.selectedPlan as 'basic' | 'premium',
+        amount: planAmounts[formData.selectedPlan as keyof typeof planAmounts],
+        couplePhotos: formData.couplePhotos,
+        musicUrl: formData.musicUrl,
         email: email
       });
 
-      console.log('Casal criado com ID:', couple.id);
-      console.log('URL slug gerado:', couple.url_slug);
-
-      // Upload das fotos (com fallback em caso de erro)
-      const photoUrls: string[] = [];
-      for (let i = 0; i < formData.couplePhotos.length; i++) {
-        try {
-          const file = formData.couplePhotos[i];
-          console.log(`Fazendo upload da foto ${i + 1}...`);
-          
-          const photoUrl = await uploadPhoto(file, couple.id, i + 1);
-          
-          // Salvar referência da foto no banco
-          await savePhoto({
-            couple_id: couple.id,
-            photo_url: photoUrl,
-            photo_order: i + 1,
-            file_name: file.name,
-            file_size: file.size
-          });
-          
-          photoUrls.push(photoUrl);
-          console.log(`Foto ${i + 1} salva com sucesso`);
-        } catch (photoError) {
-          console.error(`Erro no upload da foto ${i + 1}:`, photoError);
-          // Continuar mesmo se uma foto falhar
-          const fallbackUrl = `https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+${i + 1}`;
-          photoUrls.push(fallbackUrl);
-        }
-      }
-
-      console.log('Navegando para o site do casal...');
+      console.log('Redirecionando para o Mercado Pago...');
       
-      // Fechar modal e navegar para a URL única do casal usando o slug
-      setShowEmailModal(false);
-      navigate(`/${couple.url_slug}`, {
-        state: {
-          coupleId: couple.id,
-          coupleName: couple.couple_name,
-          startDate: couple.start_date,
-          startTime: couple.start_time,
-          message: couple.message,
-          photoUrls: photoUrls.length > 0 ? photoUrls : ["https://placehold.co/360x640/1a1a2e/ff007f?text=Sem+Fotos"],
-          musicUrl: couple.music_url,
-          urlSlug: couple.url_slug
-        }
-      });
+      // Redirecionar para o Mercado Pago
+      window.location.href = result.init_point;
 
     } catch (error) {
-      console.error('Erro ao criar site:', error);
+      console.error('Erro ao criar pagamento:', error);
       setModalContent({ 
         title: 'Erro!', 
-        message: 'Ocorreu um erro ao criar seu site. Tente novamente.' 
+        message: 'Ocorreu um erro ao processar seu pagamento. Tente novamente.' 
       });
       setShowModal(true);
       setShowEmailModal(false);
     } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.coupleName || !formData.startDate) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const coupleData = {
-        couple_name: formData.coupleName.charAt(0).toUpperCase() + formData.coupleName.slice(1),
-        start_date: formData.startDate,
-        start_time: formData.startTime || null,
-        message: formData.message || null,
-        selected_plan: formData.selectedPlan,
-        music_url: formData.musicUrl || null,
-        email: formData.email || null,
-        url_slug: formData.urlSlug || null
-      };
-
-      const { data: couple, error } = await supabase
-        .from('couples')
-        .insert(coupleData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Redirecionar para a página de pagamento
-      navigate(`/payment/${couple.id}`);
-
-    } catch (error) {
-      console.error('Erro ao criar casal:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar seu site. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      setIsCreatingPayment(false);
     }
   };
 
@@ -363,7 +276,7 @@ const Index = () => {
                     onChange={handleInputChange}
                     className="w-full p-3 input-field"
                     placeholder="Ex: João & Maria (Não use emoji)"
-                    disabled={isCreating}
+                    disabled={isCreatingPayment}
                   />
                 </div>
 
@@ -380,7 +293,7 @@ const Index = () => {
                       value={formData.startDate}
                       onChange={handleInputChange}
                       className="w-full p-3 input-field"
-                      disabled={isCreating}
+                      disabled={isCreatingPayment}
                     />
                   </div>
                   <div>
@@ -394,7 +307,7 @@ const Index = () => {
                       value={formData.startTime}
                       onChange={handleInputChange}
                       className="w-full p-3 input-field"
-                      disabled={isCreating}
+                      disabled={isCreatingPayment}
                     />
                   </div>
                 </div>
@@ -412,7 +325,7 @@ const Index = () => {
                     onChange={handleInputChange}
                     className="w-full p-3 input-field resize-none"
                     placeholder="Escreva sua linda mensagem aqui..."
-                    disabled={isCreating}
+                    disabled={isCreatingPayment}
                   />
                 </div>
 
@@ -420,7 +333,7 @@ const Index = () => {
                 <PlanSelector 
                   selectedPlan={formData.selectedPlan}
                   onPlanSelect={handlePlanSelect}
-                  disabled={isCreating}
+                  disabled={isCreatingPayment}
                 />
 
                 {/* Video URL - Only shown for premium plan */}
@@ -439,7 +352,7 @@ const Index = () => {
                         onChange={handleInputChange}
                         className="w-full p-3 pl-12 input-field"
                         placeholder="https://www.youtube.com/watch?v=..."
-                        disabled={isCreating}
+                        disabled={isCreatingPayment}
                       />
                     </div>
                     <p className="text-xs text-text-secondary mt-1">Cole o link do YouTube que será reproduzido como fundo do contador</p>
@@ -453,7 +366,7 @@ const Index = () => {
                   photoPreviews={photoPreviews}
                   onFileChange={handleFileChange}
                   onRemovePhoto={removePhoto}
-                  disabled={isCreating}
+                  disabled={isCreatingPayment}
                 />
               </form>
             </div>
@@ -471,11 +384,11 @@ const Index = () => {
               />
               <button
                 type="button"
-                onClick={handleCreateSiteClick}
-                disabled={isCreating || loading}
+                onClick={handlePaymentClick}
+                disabled={isCreatingPayment}
                 className="btn-primary w-full max-w-md mt-6 p-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isCreating ? 'Criando...' : 'Criar Nosso Site Personalizado'}
+                {isCreatingPayment ? 'Processando...' : 'Pagar com PIX ou Cartão'}
               </button>
             </div>
           </div>
@@ -490,7 +403,7 @@ const Index = () => {
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
         onSubmit={handleEmailSubmit}
-        isLoading={isCreating}
+        isLoading={isCreatingPayment}
       />
 
       {/* Error Modal */}

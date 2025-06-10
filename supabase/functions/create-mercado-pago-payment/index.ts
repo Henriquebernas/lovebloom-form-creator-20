@@ -19,38 +19,73 @@ serve(async (req) => {
   );
 
   try {
-    const { coupleId, planType, amount, coupleName } = await req.json();
+    const { 
+      coupleName, 
+      startDate, 
+      startTime, 
+      message, 
+      planType, 
+      amount, 
+      email, 
+      musicUrl, 
+      photosCount 
+    } = await req.json();
 
-    if (!coupleId || !planType || !amount) {
-      return new Response("Missing required fields", { status: 400, headers: corsHeaders });
+    console.log('Dados recebidos:', { 
+      coupleName, 
+      planType, 
+      amount, 
+      email, 
+      photosCount 
+    });
+
+    if (!coupleName || !startDate || !planType || !amount || !email) {
+      return new Response("Campos obrigatórios em falta", { 
+        status: 400, 
+        headers: corsHeaders 
+      });
     }
 
     const mpAccessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
     if (!mpAccessToken) {
-      throw new Error("Mercado Pago access token não configurado");
+      throw new Error("Token do Mercado Pago não configurado");
     }
 
     // Gerar external_reference único
-    const externalReference = `couple_${coupleId}_${Date.now()}`;
+    const externalReference = `pending_couple_${Date.now()}`;
 
-    // Criar pagamento no banco de dados
-    const { data: payment, error: paymentError } = await supabaseClient
+    // Primeiro, armazenar os dados do casal pendente (não criado ainda)
+    const { data: pendingData, error: pendingError } = await supabaseClient
       .from('payments')
       .insert({
-        couple_id: coupleId,
         amount: amount,
         currency: 'brl',
         status: 'pending',
         plan_type: planType,
-        external_reference: externalReference
+        external_reference: externalReference,
+        // Armazenar dados do casal como metadata
+        payment_method: JSON.stringify({
+          coupleName,
+          startDate,
+          startTime,
+          message,
+          email,
+          musicUrl,
+          photosCount
+        })
       })
       .select()
       .single();
 
-    if (paymentError) {
-      console.error("Erro ao criar pagamento:", paymentError);
-      return new Response("Error creating payment", { status: 500, headers: corsHeaders });
+    if (pendingError) {
+      console.error("Erro ao criar pagamento pendente:", pendingError);
+      return new Response("Erro ao criar pagamento", { 
+        status: 500, 
+        headers: corsHeaders 
+      });
     }
+
+    console.log('Pagamento pendente criado:', pendingData.id);
 
     // Criar preferência no Mercado Pago
     const preference = {
@@ -65,9 +100,9 @@ serve(async (req) => {
       external_reference: externalReference,
       notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercado-pago-webhook`,
       back_urls: {
-        success: `${req.headers.get('origin')}/payment-success?payment_id=${payment.id}`,
-        failure: `${req.headers.get('origin')}/payment-failure?payment_id=${payment.id}`,
-        pending: `${req.headers.get('origin')}/payment-pending?payment_id=${payment.id}`
+        success: `${req.headers.get('origin')}/payment-success?payment_id=${pendingData.id}`,
+        failure: `${req.headers.get('origin')}/payment-failure?payment_id=${pendingData.id}`,
+        pending: `${req.headers.get('origin')}/payment-pending?payment_id=${pendingData.id}`
       },
       auto_return: "approved",
       payment_methods: {
@@ -75,6 +110,8 @@ serve(async (req) => {
         installments: 12
       }
     };
+
+    console.log('Criando preferência no MP...');
 
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
@@ -88,23 +125,29 @@ serve(async (req) => {
     if (!mpResponse.ok) {
       const errorText = await mpResponse.text();
       console.error("Erro do Mercado Pago:", errorText);
-      return new Response("Error creating preference", { status: 500, headers: corsHeaders });
+      return new Response("Erro ao criar preferência", { 
+        status: 500, 
+        headers: corsHeaders 
+      });
     }
 
     const mpPreference = await mpResponse.json();
+    console.log('Preferência criada:', mpPreference.id);
 
     // Salvar preferência no banco
     await supabaseClient
       .from('mercado_pago_preferences')
       .insert({
-        payment_id: payment.id,
+        payment_id: pendingData.id,
         preference_id: mpPreference.id,
         init_point: mpPreference.init_point,
         sandbox_init_point: mpPreference.sandbox_init_point
       });
 
+    console.log('Retornando resultado...');
+
     return new Response(JSON.stringify({
-      payment_id: payment.id,
+      payment_id: pendingData.id,
       preference_id: mpPreference.id,
       init_point: mpPreference.init_point,
       sandbox_init_point: mpPreference.sandbox_init_point

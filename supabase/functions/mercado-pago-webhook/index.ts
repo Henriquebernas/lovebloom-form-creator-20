@@ -7,11 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[MP-WEBHOOK] ${step}${detailsStr}`);
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,131 +19,168 @@ serve(async (req) => {
   );
 
   try {
-    logStep("Webhook recebido", { method: req.method });
+    const body = await req.json();
+    console.log('Webhook recebido:', JSON.stringify(body, null, 2));
 
-    const mpAccessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
-    const webhookSecret = Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET");
-
-    if (!mpAccessToken || !webhookSecret) {
-      throw new Error("Credenciais do Mercado Pago não configuradas");
-    }
-
-    const body = await req.text();
-    let data;
-    try {
-      data = JSON.parse(body);
-    } catch {
-      logStep("Erro ao parsear JSON do webhook");
-      return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
-    }
-
-    logStep("Dados do webhook", { action: data.action, type: data.type, id: data.data?.id });
-
-    // Salvar webhook no banco para auditoria
+    // Salvar webhook raw
     await supabaseClient
       .from('mercado_pago_webhooks')
       .insert({
-        webhook_id: data.id,
-        topic: data.type,
-        payment_id: data.data?.id?.toString(),
-        merchant_order_id: data.data?.merchant_order_id?.toString(),
-        raw_data: data
+        raw_data: body,
+        topic: body.topic,
+        webhook_id: body.id?.toString(),
+        payment_id: body.data?.id?.toString(),
+        processed: false
       });
 
-    // Processar apenas notificações de pagamento
-    if (data.type === "payment") {
-      const paymentId = data.data?.id;
-      
+    if (body.topic === 'payment') {
+      const paymentId = body.data?.id;
       if (!paymentId) {
-        logStep("ID do pagamento não encontrado");
-        return new Response("Payment ID not found", { status: 400, headers: corsHeaders });
+        console.log('Payment ID não encontrado no webhook');
+        return new Response('Payment ID não encontrado', { status: 400 });
       }
 
+      console.log(`Processando pagamento: ${paymentId}`);
+
       // Buscar detalhes do pagamento no Mercado Pago
+      const mpAccessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+      if (!mpAccessToken) {
+        throw new Error("Token do Mercado Pago não configurado");
+      }
+
       const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: {
-          'Authorization': `Bearer ${mpAccessToken}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${mpAccessToken}`
         }
       });
 
       if (!paymentResponse.ok) {
-        logStep("Erro ao buscar pagamento no MP", { status: paymentResponse.status });
-        return new Response("Error fetching payment", { status: 500, headers: corsHeaders });
+        console.error('Erro ao buscar pagamento no MP');
+        return new Response('Erro ao buscar pagamento', { status: 500 });
       }
 
-      const payment = await paymentResponse.json();
-      logStep("Detalhes do pagamento", { 
-        id: payment.id, 
-        status: payment.status, 
-        externalReference: payment.external_reference 
-      });
+      const paymentData = await paymentResponse.json();
+      console.log('Dados do pagamento:', JSON.stringify(paymentData, null, 2));
 
-      // Buscar o pagamento no banco de dados usando external_reference
-      const { data: dbPayment, error: dbError } = await supabaseClient
+      const externalReference = paymentData.external_reference;
+      const status = paymentData.status;
+
+      if (!externalReference) {
+        console.log('External reference não encontrado');
+        return new Response('External reference não encontrado', { status: 400 });
+      }
+
+      // Buscar o pagamento no nosso banco
+      const { data: payment, error: paymentError } = await supabaseClient
         .from('payments')
         .select('*')
-        .eq('external_reference', payment.external_reference)
+        .eq('external_reference', externalReference)
         .single();
 
-      if (dbError) {
-        logStep("Erro ao buscar pagamento no banco", { error: dbError.message });
-        return new Response("Payment not found in database", { status: 404, headers: corsHeaders });
+      if (paymentError || !payment) {
+        console.error('Pagamento não encontrado no banco:', paymentError);
+        return new Response('Pagamento não encontrado', { status: 404 });
       }
 
-      // Mapear status do Mercado Pago para nosso sistema
-      let paymentStatus = 'pending';
-      switch (payment.status) {
-        case 'approved':
-          paymentStatus = 'succeeded';
-          break;
-        case 'rejected':
-        case 'cancelled':
-          paymentStatus = 'failed';
-          break;
-        case 'pending':
-        case 'in_process':
-          paymentStatus = 'processing';
-          break;
-      }
+      console.log('Pagamento encontrado no banco:', payment.id);
 
       // Atualizar status do pagamento
-      const { error: updateError } = await supabaseClient
+      let newStatus = 'pending';
+      if (status === 'approved') {
+        newStatus = 'succeeded';
+      } else if (status === 'rejected' || status === 'cancelled') {
+        newStatus = 'failed';
+      }
+
+      await supabaseClient
         .from('payments')
         .update({
-          status: paymentStatus,
-          mercado_pago_payment_id: payment.id.toString(),
-          mercado_pago_status: payment.status,
-          payment_method: payment.payment_method_id || 'mercado_pago',
+          status: newStatus,
+          mercado_pago_payment_id: paymentId.toString(),
+          mercado_pago_status: status,
           updated_at: new Date().toISOString()
         })
-        .eq('id', dbPayment.id);
+        .eq('id', payment.id);
 
-      if (updateError) {
-        logStep("Erro ao atualizar pagamento", { error: updateError.message });
-        return new Response("Error updating payment", { status: 500, headers: corsHeaders });
+      console.log(`Status do pagamento atualizado para: ${newStatus}`);
+
+      // Se o pagamento foi aprovado, criar o casal
+      if (status === 'approved') {
+        console.log('Pagamento aprovado, criando casal...');
+
+        try {
+          // Extrair dados do casal do payment_method (onde salvamos como JSON)
+          const coupleData = JSON.parse(payment.payment_method || '{}');
+          
+          if (!coupleData.coupleName || !coupleData.startDate) {
+            console.error('Dados do casal incompletos:', coupleData);
+            return new Response('Dados do casal incompletos', { status: 400 });
+          }
+
+          // Gerar URL slug único
+          const baseSlug = coupleData.coupleName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .replace(/\s+/g, '-')
+            .substring(0, 30);
+          
+          const urlSlug = `${baseSlug}-${Date.now()}`;
+
+          // Criar o casal
+          const { data: couple, error: coupleError } = await supabaseClient
+            .from('couples')
+            .insert({
+              couple_name: coupleData.coupleName,
+              start_date: coupleData.startDate,
+              start_time: coupleData.startTime || null,
+              message: coupleData.message || null,
+              selected_plan: payment.plan_type,
+              music_url: coupleData.musicUrl || null,
+              email: coupleData.email,
+              url_slug: urlSlug
+            })
+            .select()
+            .single();
+
+          if (coupleError) {
+            console.error('Erro ao criar casal:', coupleError);
+            return new Response('Erro ao criar casal', { status: 500 });
+          }
+
+          console.log('Casal criado com sucesso:', couple.id);
+
+          // Atualizar o pagamento com o couple_id
+          await supabaseClient
+            .from('payments')
+            .update({ couple_id: couple.id })
+            .eq('id', payment.id);
+
+          console.log('Payment atualizado com couple_id');
+
+        } catch (createError) {
+          console.error('Erro ao criar casal após pagamento aprovado:', createError);
+          // Não retornar erro aqui para não afetar o webhook do MP
+        }
       }
 
       // Marcar webhook como processado
       await supabaseClient
         .from('mercado_pago_webhooks')
         .update({ processed: true })
-        .eq('payment_id', paymentId.toString());
+        .eq('webhook_id', body.id?.toString());
 
-      logStep("Pagamento atualizado com sucesso", { 
-        paymentId: dbPayment.id, 
-        newStatus: paymentStatus 
-      });
     }
 
-    return new Response("OK", { status: 200, headers: corsHeaders });
+    return new Response('OK', { 
+      status: 200,
+      headers: corsHeaders 
+    });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("Erro no webhook", { error: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    console.error('Erro no webhook:', error);
+    return new Response('Erro interno', { 
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: corsHeaders 
     });
   }
 });
