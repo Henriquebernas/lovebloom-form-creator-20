@@ -236,9 +236,9 @@ const Index = () => {
 
       console.log('Navegando para o site do casal...');
       
-      // Fechar modal e navegar para a URL única do casal
+      // Fechar modal e navegar para a URL única do casal usando o slug
       setShowEmailModal(false);
-      navigate(`/site/${couple.id}`, {
+      navigate(`/${couple.url_slug}`, {
         state: {
           coupleId: couple.id,
           coupleName: couple.couple_name,

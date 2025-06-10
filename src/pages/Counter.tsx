@@ -1,3 +1,4 @@
+
 import { useLocation, Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { extractYouTubeVideoId } from '../utils/youtubeUtils';
@@ -11,8 +12,8 @@ import Footer from '../components/Footer';
 
 const Counter = () => {
   const location = useLocation();
-  const { coupleId } = useParams();
-  const { getCoupleById, getPhotos } = useCouples();
+  const { coupleId, urlSlug } = useParams();
+  const { getCoupleById, getCoupleBySlug, getPhotos } = useCouples();
   const [coupleData, setCoupleData] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ const Counter = () => {
       if (coupleId) {
         setLoading(true);
         try {
-          console.log('Carregando dados do casal:', coupleId);
+          console.log('Carregando dados do casal por ID:', coupleId);
           const couple = await getCoupleById(coupleId);
           const couplePhotos = await getPhotos(coupleId);
           
@@ -59,7 +60,41 @@ const Counter = () => {
           setLoading(false);
           setDataLoaded(true);
         }
-      } 
+      }
+      // Se há um urlSlug na URL, carregue do banco
+      else if (urlSlug) {
+        setLoading(true);
+        try {
+          console.log('Carregando dados do casal por slug:', urlSlug);
+          const couple = await getCoupleBySlug(urlSlug);
+          const couplePhotos = await getPhotos(couple.id);
+          
+          setCoupleData({
+            coupleName: couple.couple_name,
+            startDate: couple.start_date,
+            startTime: couple.start_time || '',
+            message: couple.message || '',
+            musicUrl: couple.music_url || ''
+          });
+          
+          setPhotos(couplePhotos.map(photo => photo.photo_url));
+          console.log('Dados carregados com sucesso por slug');
+        } catch (error) {
+          console.error('Erro ao carregar dados do casal por slug:', error);
+          // Fallback para dados padrão em caso de erro
+          setCoupleData({
+            coupleName: "Erro ao Carregar",
+            startDate: new Date().toISOString().split('T')[0],
+            startTime: "00:00",
+            message: "Erro ao carregar dados do casal",
+            musicUrl: ""
+          });
+          setPhotos(["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Erro+ao+Carregar"]);
+        } finally {
+          setLoading(false);
+          setDataLoaded(true);
+        }
+      }
       // Se há dados do estado (navegação direta), use-os
       else if (state) {
         console.log('Usando dados do estado:', state);
@@ -83,7 +118,7 @@ const Counter = () => {
     };
 
     loadCoupleData();
-  }, [coupleId, state, getCoupleById, getPhotos, dataLoaded]);
+  }, [coupleId, urlSlug, state, getCoupleById, getCoupleBySlug, getPhotos, dataLoaded]);
 
   const data = coupleData;
   const displayPhotos = photos.length > 0 ? photos : ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Sem+Fotos"];

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Couple, CouplePhoto } from '@/types/database';
@@ -8,15 +7,23 @@ export const useCouples = () => {
   const [error, setError] = useState<string | null>(null);
 
   const generateUrlSlug = (coupleName: string): string => {
-    return coupleName
+    // Gerar hash único de 5 caracteres
+    const generateHash = () => {
+      return Math.random().toString(36).substring(2, 7);
+    };
+
+    const nameSlug = coupleName
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Remove acentos
       .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
       .trim()
-      .replace(/\s+/g, '-') // Substitui espaços por hífens
-      .replace(/-+/g, '-') // Remove hífens duplicados
-      .replace(/^-+|-+$/g, '') || 'casal'; // Remove hífens no início/fim
+      .replace(/\s+/g, '_') // Substitui espaços por underscores
+      .replace(/_+/g, '_') // Remove underscores duplicados
+      .replace(/^_+|_+$/g, '') || 'casal'; // Remove underscores no início/fim
+
+    const hash = generateHash();
+    return `${nameSlug}_${hash}`;
   };
 
   const createCouple = useCallback(async (
@@ -26,9 +33,8 @@ export const useCouples = () => {
     setError(null);
     
     try {
-      // Gerar slug único baseado no nome do casal
-      let baseSlug = generateUrlSlug(coupleData.couple_name);
-      let urlSlug = baseSlug;
+      // Gerar slug único baseado no nome do casal + hash
+      let urlSlug = generateUrlSlug(coupleData.couple_name);
       let counter = 1;
 
       // Verificar se o slug já existe e incrementar se necessário
@@ -43,8 +49,25 @@ export const useCouples = () => {
           break; // Slug disponível
         }
 
-        urlSlug = `${baseSlug}-${counter}`;
+        // Se já existe, gerar um novo hash
+        urlSlug = generateUrlSlug(coupleData.couple_name);
         counter++;
+
+        // Evitar loop infinito
+        if (counter > 10) {
+          const timestamp = Date.now().toString().slice(-5);
+          const baseSlug = coupleData.couple_name
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .trim()
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '') || 'casal';
+          urlSlug = `${baseSlug}_${timestamp}`;
+          break;
+        }
       }
 
       const { data, error } = await supabase
@@ -74,6 +97,29 @@ export const useCouples = () => {
         .from('couples')
         .select('*')
         .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data as Couple;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar casal';
+      setError(errorMessage);
+      console.error('Erro ao buscar casal:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getCoupleBySlug = useCallback(async (slug: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('couples')
+        .select('*')
+        .eq('url_slug', slug)
         .single();
 
       if (error) throw error;
@@ -153,6 +199,7 @@ export const useCouples = () => {
     error,
     createCouple,
     getCoupleById,
+    getCoupleBySlug,
     uploadPhoto,
     savePhoto,
     getPhotos
