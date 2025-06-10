@@ -2,59 +2,31 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { usePayments } from '@/hooks/usePayments';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const paymentId = searchParams.get('payment_id');
-  const [coupleSlug, setCoupleSlug] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   
   const { getPaymentStatus } = usePayments();
-  const { data: payment, isLoading: paymentLoading } = getPaymentStatus(paymentId || '');
+  const { data: payment, isLoading } = getPaymentStatus(paymentId || '');
 
   useEffect(() => {
-    if (payment && payment.status === 'succeeded' && payment.couple_id) {
-      // Buscar o slug do casal
-      const fetchCoupleSlug = async () => {
-        try {
-          const { data: couple, error } = await supabase
-            .from('couples')
-            .select('url_slug')
-            .eq('id', payment.couple_id)
-            .single();
+    if (payment && payment.status === 'succeeded') {
+      // Redirecionar para o site do casal após 3 segundos
+      const timer = setTimeout(() => {
+        navigate(`/site/${payment.couple_id}`);
+      }, 3000);
 
-          if (error) {
-            console.error('Erro ao buscar casal:', error);
-          } else {
-            setCoupleSlug(couple.url_slug);
-            // Redirecionar após 3 segundos
-            setTimeout(() => {
-              navigate(`/${couple.url_slug}`);
-            }, 3000);
-          }
-        } catch (error) {
-          console.error('Erro:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchCoupleSlug();
-    } else if (!paymentLoading) {
-      setIsLoading(false);
+      return () => clearTimeout(timer);
     }
-  }, [payment, navigate, paymentLoading]);
+  }, [payment, navigate]);
 
-  if (paymentLoading || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-900 to-red-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-white mx-auto mb-4" />
-          <p className="text-white">Verificando pagamento...</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
   }
@@ -69,19 +41,16 @@ const PaymentSuccess = () => {
         </h1>
         
         <p className="text-text-secondary mb-6">
-          Seu pagamento foi processado com sucesso e seu site foi criado! 
-          {coupleSlug && " Você será redirecionado em alguns segundos."}
+          Seu pagamento foi processado com sucesso. Você será redirecionado para seu site em alguns segundos.
         </p>
 
         <div className="space-y-4">
-          {coupleSlug && (
-            <button
-              onClick={() => navigate(`/${coupleSlug}`)}
-              className="w-full bg-neon-pink hover:bg-neon-pink/80 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-            >
-              Ver meu site
-            </button>
-          )}
+          <button
+            onClick={() => navigate(`/site/${payment?.couple_id}`)}
+            className="w-full bg-neon-pink hover:bg-neon-pink/80 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          >
+            Ir para meu site
+          </button>
           
           <button
             onClick={() => navigate('/')}
