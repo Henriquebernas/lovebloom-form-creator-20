@@ -20,7 +20,6 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/counter" element={<Counter />} />
           <Route path="/site/:coupleId" element={<Counter />} />
-          <Route path="/:coupleSlug" element={<Counter />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,10 +1,8 @@
-
 import { useLocation, Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { extractYouTubeVideoId } from '../utils/youtubeUtils';
 import { useCountdown } from '../hooks/useCountdown';
 import { useCouples } from '../hooks/useCouples';
-import { supabase } from '@/integrations/supabase/client';
 import FloatingHearts from '../components/FloatingHearts';
 import PhotoGallery from '../components/PhotoGallery';
 import YouTubePlayer from '../components/YouTubePlayer';
@@ -13,7 +11,7 @@ import Footer from '../components/Footer';
 
 const Counter = () => {
   const location = useLocation();
-  const { coupleId, coupleSlug } = useParams();
+  const { coupleId } = useParams();
   const { getCoupleById, getPhotos } = useCouples();
   const [coupleData, setCoupleData] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -28,7 +26,7 @@ const Counter = () => {
     if (dataLoaded) return;
 
     const loadCoupleData = async () => {
-      // Se há um coupleId na URL, carregue do banco pelo ID
+      // Se há um coupleId na URL, carregue do banco
       if (coupleId) {
         setLoading(true);
         try {
@@ -48,6 +46,7 @@ const Counter = () => {
           console.log('Dados carregados com sucesso');
         } catch (error) {
           console.error('Erro ao carregar dados do casal:', error);
+          // Fallback para dados padrão em caso de erro
           setCoupleData({
             coupleName: "Erro ao Carregar",
             startDate: new Date().toISOString().split('T')[0],
@@ -60,47 +59,7 @@ const Counter = () => {
           setLoading(false);
           setDataLoaded(true);
         }
-      }
-      // Se há um coupleSlug na URL, carregue do banco pelo slug
-      else if (coupleSlug) {
-        setLoading(true);
-        try {
-          console.log('Carregando dados do casal pelo slug:', coupleSlug);
-          const { data: couple, error } = await supabase
-            .from('couples')
-            .select('*')
-            .eq('url_slug', coupleSlug)
-            .single();
-
-          if (error) throw error;
-
-          const couplePhotos = await getPhotos(couple.id);
-          
-          setCoupleData({
-            coupleName: couple.couple_name,
-            startDate: couple.start_date,
-            startTime: couple.start_time || '',
-            message: couple.message || '',
-            musicUrl: couple.music_url || ''
-          });
-          
-          setPhotos(couplePhotos.map(photo => photo.photo_url));
-          console.log('Dados carregados com sucesso pelo slug');
-        } catch (error) {
-          console.error('Erro ao carregar dados do casal pelo slug:', error);
-          setCoupleData({
-            coupleName: "Erro ao Carregar",
-            startDate: new Date().toISOString().split('T')[0],
-            startTime: "00:00",
-            message: "Erro ao carregar dados do casal",
-            musicUrl: ""
-          });
-          setPhotos(["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Erro+ao+Carregar"]);
-        } finally {
-          setLoading(false);
-          setDataLoaded(true);
-        }
-      }
+      } 
       // Se há dados do estado (navegação direta), use-os
       else if (state) {
         console.log('Usando dados do estado:', state);
@@ -124,7 +83,7 @@ const Counter = () => {
     };
 
     loadCoupleData();
-  }, [coupleId, coupleSlug, state, getCoupleById, getPhotos, dataLoaded]);
+  }, [coupleId, state, getCoupleById, getPhotos, dataLoaded]);
 
   const data = coupleData;
   const displayPhotos = photos.length > 0 ? photos : ["https://placehold.co/360x640/1a1a2e/e0e0e0?text=Sem+Fotos"];
@@ -152,52 +111,32 @@ const Counter = () => {
 
   return (
     <div className="min-h-screen bg-dark-bg flex flex-col">
-      <header className="absolute top-0 left-0 right-0 p-3 text-center z-20">
-        <Link to="/" className="text-lg sm:text-2xl playfair-display font-bold text-white drop-shadow-lg">
+      <header className="absolute top-0 left-0 right-0 p-4 text-center z-20 mb-8">
+        <Link to="/" className="text-2xl playfair-display font-bold text-white drop-shadow-lg">
           Love<span className="text-neon-pink">Bloom</span>
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-5 overflow-x-hidden relative">
-        <div className="counter-main-container bg-element-bg bg-opacity-90 p-4 sm:p-5 rounded-xl shadow-2xl max-w-xs sm:max-w-sm w-full text-center relative z-20 mt-16 sm:mt-20">
+      <div className="flex-1 flex flex-col items-center justify-center p-5 overflow-x-hidden relative">
+        <div className="counter-main-container bg-element-bg bg-opacity-90 p-5 rounded-xl shadow-2xl max-w-sm w-full text-center relative z-20 mt-20">
           <FloatingHearts />
 
-          <div className="relative w-full rounded-lg overflow-hidden mb-3 sm:mb-5 bg-element-bg-lighter shadow-lg" style={{ aspectRatio: '9/16', maxHeight: '240px' }}>
-            <img 
-              src={displayPhotos[0]}
-              alt={`Foto de ${data.coupleName || 'Casal'}`}
-              className="w-full h-full object-cover block transition-opacity duration-500"
-            />
-            
-            {/* Photo Indicators - Only shown if there are multiple photos */}
-            {displayPhotos.length > 1 && (
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                {displayPhotos.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === 0 ? 'bg-neon-pink' : 'bg-white bg-opacity-50'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <PhotoGallery photos={displayPhotos} coupleName={data.coupleName} />
 
-          <h2 className="text-xl sm:text-2xl font-bold mb-2 text-text-primary playfair-display">
+          <h2 className="text-2xl font-bold mb-2 text-text-primary playfair-display">
             {data.coupleName}
           </h2>
           
-          <h3 className="text-base sm:text-lg font-semibold mb-2 text-white playfair-display">
+          <h3 className="text-lg font-semibold mb-2 text-white playfair-display">
             Juntos
           </h3>
           
           <div 
-            className="text-base sm:text-lg leading-relaxed text-neon-pink font-bold mb-3 sm:mb-4"
+            className="text-lg leading-relaxed text-neon-pink font-bold mb-4"
             dangerouslySetInnerHTML={{ __html: countdown }}
           />
 
-          <div className="text-xs sm:text-sm text-text-secondary mt-3 sm:mt-4 pt-2 border-t border-opacity-20 line-clamp-3" style={{ borderColor: '#ff007f' }}>
+          <div className="text-sm text-text-secondary mt-4 pt-2 border-t border-opacity-20" style={{ borderColor: '#ff007f' }}>
             <p>{data.message}</p>
           </div>
 
@@ -223,12 +162,6 @@ const Counter = () => {
         }
         .counter-main-container {
           box-shadow: 0 0 25px rgba(0,0,0,0.3), 0 0 10px rgba(255, 0, 127, 0.4);
-        }
-        .line-clamp-3 {
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
         }
       `}</style>
     </div>

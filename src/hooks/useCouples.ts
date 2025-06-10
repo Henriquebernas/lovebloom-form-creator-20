@@ -7,28 +7,16 @@ export const useCouples = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateRandomHash = (): string => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let hash = '';
-    for (let i = 0; i < 5; i++) {
-      hash += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return hash;
-  };
-
   const generateUrlSlug = (coupleName: string): string => {
-    const baseSlug = coupleName
+    return coupleName
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Remove acentos
       .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
       .trim()
-      .replace(/\s+/g, '_') // Substitui espaços por underscores
-      .replace(/_+/g, '_') // Remove underscores duplicados
-      .replace(/^_+|_+$/g, '') || 'casal'; // Remove underscores no início/fim
-
-    const hash = generateRandomHash();
-    return `${baseSlug}_${hash}`;
+      .replace(/\s+/g, '-') // Substitui espaços por hífens
+      .replace(/-+/g, '-') // Remove hífens duplicados
+      .replace(/^-+|-+$/g, '') || 'casal'; // Remove hífens no início/fim
   };
 
   const createCouple = useCallback(async (
@@ -38,8 +26,9 @@ export const useCouples = () => {
     setError(null);
     
     try {
-      // Gerar slug único com hash
-      let urlSlug = generateUrlSlug(coupleData.couple_name);
+      // Gerar slug único baseado no nome do casal
+      let baseSlug = generateUrlSlug(coupleData.couple_name);
+      let urlSlug = baseSlug;
       let counter = 1;
 
       // Verificar se o slug já existe e incrementar se necessário
@@ -54,26 +43,8 @@ export const useCouples = () => {
           break; // Slug disponível
         }
 
-        // Se existir, gerar novo hash
-        const baseSlug = coupleData.couple_name
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9\s-]/g, '')
-          .trim()
-          .replace(/\s+/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_+|_+$/g, '') || 'casal';
-        
-        const newHash = generateRandomHash();
-        urlSlug = `${baseSlug}_${newHash}`;
+        urlSlug = `${baseSlug}-${counter}`;
         counter++;
-
-        // Evitar loop infinito
-        if (counter > 100) {
-          urlSlug = `${baseSlug}_${Date.now().toString().slice(-5)}`;
-          break;
-        }
       }
 
       const { data, error } = await supabase
