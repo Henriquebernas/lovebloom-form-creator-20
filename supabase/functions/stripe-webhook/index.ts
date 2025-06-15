@@ -90,10 +90,26 @@ const uploadPhotoFromBase64 = async (base64Data: string, coupleId: string, order
 };
 
 serve(async (req) => {
+  logStep("=== WEBHOOK REQUEST RECEIVED ===", {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
   if (req.method === 'OPTIONS') {
+    logStep("Handling CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') {
+    logStep("Invalid HTTP method", { method: req.method });
+    return new Response("Method not allowed", { 
+      status: 405, 
+      headers: corsHeaders 
+    });
+  }
+
+  // Use service role key for webhook processing (no user authentication needed)
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -101,13 +117,6 @@ serve(async (req) => {
   );
 
   try {
-    logStep("=== WEBHOOK RECEIVED ===");
-    logStep("Request details", { 
-      method: req.method, 
-      url: req.url,
-      headers: Object.fromEntries(req.headers.entries())
-    });
-
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       logStep("CRITICAL ERROR: Stripe secret key not configured");
@@ -117,10 +126,12 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const body = await req.text();
     const signature = req.headers.get('stripe-signature');
+    const contentType = req.headers.get('content-type');
 
-    logStep("Received webhook data", { 
+    logStep("Webhook data received", { 
       bodyLength: body.length, 
       hasSignature: !!signature,
+      contentType: contentType,
       signaturePreview: signature ? signature.substring(0, 20) + '...' : 'none'
     });
 
