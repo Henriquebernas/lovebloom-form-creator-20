@@ -34,6 +34,8 @@ const generateUrlSlug = (coupleName: string): string => {
 
 const uploadPhotoFromBase64 = async (base64Data: string, coupleId: string, order: number, supabaseClient: any) => {
   try {
+    logStep(`Starting photo upload ${order}`, { coupleId });
+    
     // Extrair dados da string base64
     const matches = base64Data.match(/^data:(.+);base64,(.+)$/);
     if (!matches) {
@@ -58,6 +60,8 @@ const uploadPhotoFromBase64 = async (base64Data: string, coupleId: string, order
     const fileName = `${coupleId}-${order}-${Date.now()}.${extension}`;
     const filePath = `${coupleId}/${fileName}`;
 
+    logStep(`Uploading photo to storage`, { fileName, mimeType });
+
     // Upload para o storage
     const { error: uploadError } = await supabaseClient.storage
       .from('couple-photos')
@@ -66,7 +70,7 @@ const uploadPhotoFromBase64 = async (base64Data: string, coupleId: string, order
       });
 
     if (uploadError) {
-      console.error('Erro no upload:', uploadError);
+      logStep('Storage upload error', { error: uploadError });
       throw uploadError;
     }
 
@@ -74,9 +78,10 @@ const uploadPhotoFromBase64 = async (base64Data: string, coupleId: string, order
       .from('couple-photos')
       .getPublicUrl(filePath);
 
+    logStep(`Photo uploaded successfully`, { photoUrl: data.publicUrl });
     return data.publicUrl;
   } catch (err) {
-    console.error('Erro ao fazer upload da foto:', err);
+    logStep('Error uploading photo', { error: err.message, order });
     // Se falhar o upload, retornar uma URL de placeholder
     return `https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+${order}`;
   }
@@ -94,10 +99,11 @@ serve(async (req) => {
   );
 
   try {
-    logStep("Webhook received");
+    logStep("Webhook received - Starting processing");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
+      logStep("ERROR: Stripe secret key not configured");
       throw new Error("Stripe secret key não configurado");
     }
 
@@ -105,20 +111,28 @@ serve(async (req) => {
     const body = await req.text();
     const signature = req.headers.get('stripe-signature');
 
+    logStep("Received webhook data", { 
+      bodyLength: body.length, 
+      hasSignature: !!signature 
+    });
+
     let event;
     try {
       // Para produção, você deve verificar a assinatura do webhook
       event = JSON.parse(body);
-      logStep("Event parsed", { type: event.type, id: event.id });
+      logStep("Event parsed successfully", { type: event.type, id: event.id });
     } catch (err) {
-      logStep("Error parsing webhook", { error: err.message });
-      return new Response("Webhook error", { status: 400, headers: corsHeaders });
+      logStep("ERROR: Failed to parse webhook body", { error: err.message });
+      return new Response("Webhook parsing error", { status: 400, headers: corsHeaders });
     }
 
     // Processar diferentes tipos de eventos
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      logStep("Processing checkout session completed", { sessionId: session.id });
+      logStep("Processing checkout session completed", { 
+        sessionId: session.id,
+        paymentStatus: session.payment_status 
+      });
 
       // Buscar o pagamento no banco de dados
       const { data: payment, error: paymentError } = await supabaseClient
@@ -127,16 +141,31 @@ serve(async (req) => {
         .eq('stripe_session_id', session.id)
         .single();
 
-      if (paymentError || !payment) {
-        logStep("Payment not found", { sessionId: session.id, error: paymentError });
+      if (paymentError) {
+        logStep("ERROR: Database query failed", { error: paymentError });
+        return new Response("Database error", { status: 500, headers: corsHeaders });
+      }
+
+      if (!payment) {
+        logStep("ERROR: Payment not found in database", { sessionId: session.id });
         return new Response("Payment not found", { status: 404, headers: corsHeaders });
       }
+
+      logStep("Payment found in database", { 
+        paymentId: payment.id, 
+        coupleId: payment.couple_id,
+        hasFormData: !!payment.form_data 
+      });
 
       // Se o pagamento foi bem-sucedido e ainda não criamos o casal, criar agora
       if (!payment.couple_id && payment.form_data) {
         logStep("Creating couple after successful payment");
         
         const formData = payment.form_data;
+        logStep("Form data retrieved", { 
+          coupleName: formData.coupleName,
+          hasPhotos: !!(formData.photosBase64 && formData.photosBase64.length > 0)
+        });
         
         // Gerar slug único
         let urlSlug = generateUrlSlug(formData.coupleName);
@@ -154,9 +183,16 @@ serve(async (req) => {
             break; // Slug disponível
           }
 
+          logStep(`Slug already exists, generating new one`, { attempt: counter, slug: urlSlug });
           urlSlug = generateUrlSlug(formData.coupleName);
           counter++;
         }
+
+        logStep("Creating couple with data", { 
+          coupleName: formData.coupleName,
+          urlSlug: urlSlug,
+          startDate: formData.startDate 
+        });
 
         // Criar o casal
         const { data: couple, error: coupleError } = await supabaseClient
@@ -175,66 +211,87 @@ serve(async (req) => {
           .single();
 
         if (coupleError) {
-          logStep("Error creating couple", { error: coupleError.message });
-        } else {
-          logStep("Couple created successfully", { coupleId: couple.id, urlSlug: urlSlug });
+          logStep("ERROR: Failed to create couple", { error: coupleError });
+          return new Response("Failed to create couple", { status: 500, headers: corsHeaders });
+        }
 
-          // Upload das fotos se existirem
-          if (formData.photosBase64 && formData.photosBase64.length > 0) {
-            logStep("Uploading photos", { count: formData.photosBase64.length });
-            
-            for (let i = 0; i < formData.photosBase64.length; i++) {
-              try {
-                const photoUrl = await uploadPhotoFromBase64(
-                  formData.photosBase64[i], 
-                  couple.id, 
-                  i + 1, 
-                  supabaseClient
-                );
+        logStep("Couple created successfully", { coupleId: couple.id, urlSlug: urlSlug });
 
-                // Salvar referência da foto no banco
-                await supabaseClient
-                  .from('couple_photos')
-                  .insert({
-                    couple_id: couple.id,
-                    photo_url: photoUrl,
-                    photo_order: i + 1,
-                    file_name: `photo_${i + 1}.jpg`,
-                    file_size: 0
-                  });
+        // Upload das fotos se existirem
+        if (formData.photosBase64 && formData.photosBase64.length > 0) {
+          logStep("Starting photo uploads", { count: formData.photosBase64.length });
+          
+          for (let i = 0; i < formData.photosBase64.length; i++) {
+            try {
+              const photoUrl = await uploadPhotoFromBase64(
+                formData.photosBase64[i], 
+                couple.id, 
+                i + 1, 
+                supabaseClient
+              );
 
-                logStep(`Photo ${i + 1} saved successfully`);
-              } catch (photoError) {
-                logStep(`Error uploading photo ${i + 1}`, { error: photoError });
+              // Salvar referência da foto no banco
+              const { error: photoSaveError } = await supabaseClient
+                .from('couple_photos')
+                .insert({
+                  couple_id: couple.id,
+                  photo_url: photoUrl,
+                  photo_order: i + 1,
+                  file_name: `photo_${i + 1}.jpg`,
+                  file_size: 0
+                });
+
+              if (photoSaveError) {
+                logStep(`ERROR: Failed to save photo ${i + 1} to database`, { error: photoSaveError });
+              } else {
+                logStep(`Photo ${i + 1} saved successfully to database`);
               }
+            } catch (photoError) {
+              logStep(`ERROR: Photo ${i + 1} processing failed`, { error: photoError });
             }
           }
-
-          // Atualizar o pagamento com o ID do casal
-          await supabaseClient
-            .from('payments')
-            .update({
-              couple_id: couple.id,
-              status: 'succeeded',
-              stripe_payment_intent_id: session.payment_intent,
-              payment_method: session.payment_method_types?.[0] || 'card',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', payment.id);
-
-          logStep("Payment updated with couple created", { 
-            paymentId: payment.id, 
-            coupleId: couple.id,
-            urlSlug: urlSlug
-          });
         }
+
+        // Atualizar o pagamento com o ID do casal
+        const { error: updateError } = await supabaseClient
+          .from('payments')
+          .update({
+            couple_id: couple.id,
+            status: 'succeeded',
+            stripe_payment_intent_id: session.payment_intent,
+            payment_method: session.payment_method_types?.[0] || 'card',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', payment.id);
+
+        if (updateError) {
+          logStep("ERROR: Failed to update payment", { error: updateError });
+          return new Response("Failed to update payment", { status: 500, headers: corsHeaders });
+        }
+
+        logStep("SUCCESS: Payment updated with couple created", { 
+          paymentId: payment.id, 
+          coupleId: couple.id,
+          urlSlug: urlSlug
+        });
+      } else {
+        logStep("Couple already exists or no form data", { 
+          coupleId: payment.couple_id,
+          hasFormData: !!payment.form_data 
+        });
       }
+    } else {
+      logStep("Unhandled event type", { type: event.type });
     }
 
+    logStep("Webhook processing completed successfully");
     return new Response("OK", { status: 200, headers: corsHeaders });
 
   } catch (error) {
-    logStep("Error in webhook", { error: error.message });
+    logStep("CRITICAL ERROR in webhook processing", { 
+      error: error.message,
+      stack: error.stack 
+    });
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
