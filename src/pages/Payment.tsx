@@ -4,14 +4,26 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePayments } from '@/hooks/usePayments';
 import { useToast } from '@/hooks/use-toast';
+import { usePartnerContext } from '@/hooks/usePartnerContext';
 import PlanSelector from '@/components/PlanSelector';
+import PartnerBanner from '@/components/PartnerBanner';
 import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 const Payment = () => {
   const { coupleId } = useParams();
   const navigate = useNavigate();
   const { createPayment } = usePayments();
   const { toast } = useToast();
+  const { 
+    partner, 
+    pricing, 
+    hasCustomPricing, 
+    isLoading: partnerLoading, 
+    formatPrice 
+  } = usePartnerContext();
+  
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
 
   const { data: couple, isLoading } = useQuery({
     queryKey: ['couple', coupleId],
@@ -37,7 +49,8 @@ const Payment = () => {
       // SEGURANÇA: Não enviamos mais o valor do frontend
       const result = await createPayment.mutateAsync({
         planType: planType as 'basic' | 'premium',
-        coupleName: couple.couple_name
+        coupleName: couple.couple_name,
+        referralCode: partner?.referral_code, // Incluir código do parceiro se presente
       });
 
       // Redirecionar para o Stripe Checkout
@@ -47,7 +60,7 @@ const Payment = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || partnerLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-900 to-red-900 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -83,14 +96,31 @@ const Payment = () => {
           </p>
         </div>
 
+        {/* Partner Banner */}
+        {partner && (
+          <PartnerBanner partner={partner} hasCustomPricing={hasCustomPricing} />
+        )}
+
         <div className="bg-black bg-opacity-30 backdrop-blur-sm rounded-2xl p-8">
           <PlanSelector
-            selectedPlan=""
-            onPlanSelect={() => {}}
-            showPaymentButton={true}
-            onPaymentClick={handlePaymentClick}
-            isLoading={createPayment.isPending}
+            selectedPlan={selectedPlan}
+            onPlanSelect={setSelectedPlan}
+            pricing={pricing}
+            formatPrice={formatPrice}
+            hasCustomPricing={hasCustomPricing}
           />
+          
+          {selectedPlan && (
+            <div className="mt-6">
+              <button
+                onClick={() => handlePaymentClick(selectedPlan)}
+                disabled={createPayment.isPending}
+                className="w-full bg-neon-pink hover:bg-neon-pink/80 text-white px-6 py-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createPayment.isPending ? 'Processando...' : `Pagar ${formatPrice(pricing[selectedPlan as keyof typeof pricing])}`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

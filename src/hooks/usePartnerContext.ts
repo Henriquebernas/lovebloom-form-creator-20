@@ -78,7 +78,7 @@ export const usePartnerContext = () => {
 
     try {
       // Buscar dados do parceiro
-      const { data: partner, error: partnerError } = await supabase
+      const { data: partnerData, error: partnerError } = await supabase
         .from('partners')
         .select('*')
         .eq('referral_code', referralCode.toUpperCase())
@@ -88,6 +88,12 @@ export const usePartnerContext = () => {
       if (partnerError) {
         throw new Error('Código de parceiro inválido');
       }
+
+      // Converter o tipo de status para o tipo correto
+      const partner: Partner = {
+        ...partnerData,
+        status: partnerData.status as 'pending' | 'active' | 'suspended' | 'inactive'
+      };
 
       // Buscar preços personalizados do parceiro
       const { data: customPricing, error: pricingError } = await supabase
