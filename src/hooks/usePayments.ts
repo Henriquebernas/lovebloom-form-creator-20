@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreatePaymentData {
-  coupleId: string;
   planType: 'basic' | 'premium';
   amount: number;
   coupleName: string;
@@ -25,7 +24,7 @@ export const usePayments = () => {
 
   const createPayment = useMutation({
     mutationFn: async (data: CreatePaymentData) => {
-      const { data: result, error } = await supabase.functions.invoke('create-mercado-pago-payment', {
+      const { data: result, error } = await supabase.functions.invoke('create-stripe-checkout', {
         body: data
       });
 

@@ -40,14 +40,13 @@ const Payment = () => {
 
     try {
       const result = await createPayment.mutateAsync({
-        coupleId: couple.id,
         planType: planType as 'basic' | 'premium',
         amount: planAmounts[planType as keyof typeof planAmounts],
         coupleName: couple.couple_name
       });
 
-      // Redirecionar para o Mercado Pago
-      window.location.href = result.init_point;
+      // Redirecionar para o Stripe Checkout
+      window.location.href = result.url;
     } catch (error) {
       console.error('Erro ao criar pagamento:', error);
     }

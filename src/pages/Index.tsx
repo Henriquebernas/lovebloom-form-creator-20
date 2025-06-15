@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -208,7 +207,7 @@ const Index = () => {
     setIsCreating(true);
     
     try {
-      console.log('Iniciando processo de pagamento...');
+      console.log('Iniciando processo de pagamento com Stripe...');
       
       // Converter fotos para base64 para enviar no payload
       const photosBase64 = await Promise.all(
@@ -228,7 +227,6 @@ const Index = () => {
 
       // Criar pagamento com todos os dados do formulário
       const result = await createPayment.mutateAsync({
-        coupleId: 'temp', // Será criado após pagamento
         planType: formData.selectedPlan as 'basic' | 'premium',
         amount: planAmounts[formData.selectedPlan as keyof typeof planAmounts],
         coupleName: formData.coupleName,
@@ -244,10 +242,10 @@ const Index = () => {
         }
       });
 
-      console.log('Redirecionando para o Mercado Pago...');
+      console.log('Redirecionando para o Stripe...');
       
-      // Redirecionar para o Mercado Pago
-      window.location.href = result.init_point;
+      // Redirecionar para o Stripe Checkout
+      window.location.href = result.url;
 
     } catch (error) {
       console.error('Erro ao criar pagamento:', error);
