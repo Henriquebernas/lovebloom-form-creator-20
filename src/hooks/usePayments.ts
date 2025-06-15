@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CreatePaymentData {
   planType: 'basic' | 'premium';
-  amount: number;
   coupleName: string;
   formData?: {
     coupleName: string;

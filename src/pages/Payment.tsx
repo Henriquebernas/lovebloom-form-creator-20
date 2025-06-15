@@ -33,15 +33,10 @@ const Payment = () => {
   const handlePaymentClick = async (planType: string) => {
     if (!couple) return;
 
-    const planAmounts = {
-      basic: 1990, // R$ 19,90 em centavos
-      premium: 2990 // R$ 29,90 em centavos
-    };
-
     try {
+      // SEGURANÇA: Não enviamos mais o valor do frontend
       const result = await createPayment.mutateAsync({
         planType: planType as 'basic' | 'premium',
-        amount: planAmounts[planType as keyof typeof planAmounts],
         coupleName: couple.couple_name
       });
 

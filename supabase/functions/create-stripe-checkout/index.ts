@@ -13,6 +13,20 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// DEFINIÇÃO SEGURA DOS PREÇOS NO BACKEND
+const PLAN_PRICES = {
+  basic: {
+    amount: 1990, // R$ 19,90 em centavos
+    name: 'Plano Memórias',
+    description: 'Contador personalizado com até 2 fotos'
+  },
+  premium: {
+    amount: 2990, // R$ 29,90 em centavos  
+    name: 'Plano Eternidade',
+    description: 'Contador personalizado com até 5 fotos e música'
+  }
+} as const;
+
 const generateUrlSlug = (coupleName: string): string => {
   const generateHash = () => {
     return Math.random().toString(36).substring(2, 7);
@@ -96,18 +110,28 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { planType, amount, coupleName, formData } = await req.json();
+    const { planType, coupleName, formData } = await req.json();
 
-    if (!planType || !amount || !coupleName) {
+    // VALIDAÇÃO DE SEGURANÇA: Verificar se o plano é válido
+    if (!planType || !PLAN_PRICES[planType as keyof typeof PLAN_PRICES]) {
+      logStep("Invalid plan type", { planType });
+      return new Response("Invalid plan type", { status: 400, headers: corsHeaders });
+    }
+
+    if (!coupleName) {
       return new Response("Missing required fields", { status: 400, headers: corsHeaders });
     }
+
+    // USAR PREÇOS SEGUROS DO BACKEND
+    const planConfig = PLAN_PRICES[planType as keyof typeof PLAN_PRICES];
+    const amount = planConfig.amount;
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       throw new Error("Stripe secret key não configurado");
     }
 
-    logStep("Initializing Stripe", { planType, amount, coupleName });
+    logStep("Initializing Stripe", { planType, amount: planConfig.amount, coupleName });
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     // Gerar external_reference único
@@ -141,7 +165,8 @@ serve(async (req) => {
           price_data: {
             currency: 'brl',
             product_data: {
-              name: `Plano ${planType === 'basic' ? 'Memórias' : 'Eternidade'} - ${coupleName}`,
+              name: `${planConfig.name} - ${coupleName}`,
+              description: planConfig.description,
             },
             unit_amount: amount,
           },

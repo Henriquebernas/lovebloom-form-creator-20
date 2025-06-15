@@ -220,15 +220,9 @@ const Index = () => {
         })
       );
 
-      const planAmounts = {
-        basic: 1990, // R$ 19,90 em centavos
-        premium: 2990 // R$ 29,90 em centavos
-      };
-
-      // Criar pagamento com todos os dados do formulário
+      // SEGURANÇA: Não enviamos mais valores do frontend
       const result = await createPayment.mutateAsync({
         planType: formData.selectedPlan as 'basic' | 'premium',
-        amount: planAmounts[formData.selectedPlan as keyof typeof planAmounts],
         coupleName: formData.coupleName,
         formData: {
           coupleName: formData.coupleName,
