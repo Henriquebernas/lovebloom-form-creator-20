@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface CreatePaymentData {
   planType: 'basic' | 'premium';
   coupleName: string;
+  referralCode?: string;
   formData?: {
     coupleName: string;
     startDate: string;

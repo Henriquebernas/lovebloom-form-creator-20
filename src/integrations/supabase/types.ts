@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      commissions: {
+        Row: {
+          commission_amount: number
+          commission_percentage: number
+          created_at: string
+          id: string
+          paid_at: string | null
+          partner_id: string
+          payment_id: string
+          status: string | null
+          stripe_transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_percentage: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          partner_id: string
+          payment_id: string
+          status?: string | null
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_percentage?: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          partner_id?: string
+          payment_id?: string
+          status?: string | null
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_photos: {
         Row: {
           couple_id: string
@@ -89,6 +143,48 @@ export type Database = {
         }
         Relationships: []
       }
+      partners: {
+        Row: {
+          commission_percentage: number | null
+          created_at: string
+          document: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          referral_code: string
+          status: string | null
+          stripe_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          commission_percentage?: number | null
+          created_at?: string
+          document?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          referral_code: string
+          status?: string | null
+          stripe_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          commission_percentage?: number | null
+          created_at?: string
+          document?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          referral_code?: string
+          status?: string | null
+          stripe_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -98,8 +194,10 @@ export type Database = {
           external_reference: string | null
           form_data: Json | null
           id: string
+          partner_id: string | null
           payment_method: string | null
           plan_type: string
+          referral_code: string | null
           status: string
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
@@ -113,8 +211,10 @@ export type Database = {
           external_reference?: string | null
           form_data?: Json | null
           id?: string
+          partner_id?: string | null
           payment_method?: string | null
           plan_type: string
+          referral_code?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
@@ -128,8 +228,10 @@ export type Database = {
           external_reference?: string | null
           form_data?: Json | null
           id?: string
+          partner_id?: string | null
           payment_method?: string | null
           plan_type?: string
+          referral_code?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
@@ -141,6 +243,13 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
         ]

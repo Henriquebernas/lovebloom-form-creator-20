@@ -195,7 +195,8 @@ serve(async (req) => {
         coupleId: payment.couple_id,
         hasFormData: !!payment.form_data,
         currentStatus: payment.status,
-        planType: payment.plan_type
+        planType: payment.plan_type,
+        hasPartner: !!payment.partner_id
       });
 
       // Se o pagamento foi bem-sucedido e ainda não criamos o casal, criar agora
@@ -367,11 +368,54 @@ serve(async (req) => {
           return new Response("Failed to update payment", { status: 500, headers: corsHeaders });
         }
 
+        // Processar comissão se houver parceiro
+        if (payment.partner_id) {
+          logStep("=== PROCESSING PARTNER COMMISSION ===", { partnerId: payment.partner_id });
+          
+          // Buscar dados do parceiro
+          const { data: partner, error: partnerError } = await supabaseClient
+            .from('partners')
+            .select('*')
+            .eq('id', payment.partner_id)
+            .single();
+
+          if (partnerError) {
+            logStep("ERROR: Failed to fetch partner", { error: partnerError, partnerId: payment.partner_id });
+          } else {
+            const commissionAmount = Math.round(payment.amount * (partner.commission_percentage / 100));
+            
+            logStep("Creating commission record", {
+              partnerId: partner.id,
+              paymentId: payment.id,
+              commissionAmount: commissionAmount,
+              commissionPercentage: partner.commission_percentage
+            });
+
+            // Criar registro de comissão
+            const { error: commissionError } = await supabaseClient
+              .from('commissions')
+              .insert({
+                partner_id: payment.partner_id,
+                payment_id: payment.id,
+                commission_amount: commissionAmount,
+                commission_percentage: partner.commission_percentage,
+                status: 'pending'
+              });
+
+            if (commissionError) {
+              logStep("ERROR: Failed to create commission", { error: commissionError });
+            } else {
+              logStep("SUCCESS: Commission record created", { commissionAmount });
+            }
+          }
+        }
+
         logStep("=== SUCCESS: WEBHOOK PROCESSING COMPLETED ===", { 
           paymentId: payment.id, 
           coupleId: couple.id,
           urlSlug: urlSlug,
-          finalStatus: 'succeeded'
+          finalStatus: 'succeeded',
+          hasCommission: !!payment.partner_id
         });
       } else {
         logStep("SKIPPING COUPLE CREATION", { 

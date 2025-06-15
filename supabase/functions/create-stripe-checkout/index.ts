@@ -27,75 +27,6 @@ const PLAN_PRICES = {
   }
 } as const;
 
-const generateUrlSlug = (coupleName: string): string => {
-  const generateHash = () => {
-    return Math.random().toString(36).substring(2, 7);
-  };
-
-  const nameSlug = coupleName
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-    .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
-    .trim()
-    .replace(/\s+/g, '_') // Substitui espaços por underscores
-    .replace(/_+/g, '_') // Remove underscores duplicados
-    .replace(/^_+|_+$/g, '') || 'casal'; // Remove underscores no início/fim
-
-  const hash = generateHash();
-  return `${nameSlug}_${hash}`;
-};
-
-const uploadPhotoFromBase64 = async (base64Data: string, coupleId: string, order: number, supabaseClient: any) => {
-  try {
-    // Extrair dados da string base64
-    const matches = base64Data.match(/^data:(.+);base64,(.+)$/);
-    if (!matches) {
-      throw new Error('Invalid base64 format');
-    }
-
-    const mimeType = matches[1];
-    const base64Content = matches[2];
-    
-    // Converter base64 para Uint8Array
-    const binaryString = atob(base64Content);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    // Determinar extensão do arquivo
-    const extension = mimeType.includes('jpeg') ? 'jpg' : 
-                     mimeType.includes('png') ? 'png' : 
-                     mimeType.includes('webp') ? 'webp' : 'jpg';
-
-    const fileName = `${coupleId}-${order}-${Date.now()}.${extension}`;
-    const filePath = `${coupleId}/${fileName}`;
-
-    // Upload para o storage
-    const { error: uploadError } = await supabaseClient.storage
-      .from('couple-photos')
-      .upload(filePath, bytes, {
-        contentType: mimeType
-      });
-
-    if (uploadError) {
-      console.error('Erro no upload:', uploadError);
-      throw uploadError;
-    }
-
-    const { data } = supabaseClient.storage
-      .from('couple-photos')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  } catch (err) {
-    console.error('Erro ao fazer upload da foto:', err);
-    // Se falhar o upload, retornar uma URL de placeholder
-    return `https://placehold.co/360x640/1a1a2e/ff007f?text=Foto+${order}`;
-  }
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -110,7 +41,7 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { planType, coupleName, formData } = await req.json();
+    const { planType, coupleName, formData, referralCode } = await req.json();
 
     // VALIDAÇÃO DE SEGURANÇA: Verificar se o plano é válido
     if (!planType || !PLAN_PRICES[planType as keyof typeof PLAN_PRICES]) {
@@ -122,6 +53,27 @@ serve(async (req) => {
       return new Response("Missing required fields", { status: 400, headers: corsHeaders });
     }
 
+    // Verificar se o código de parceiro é válido (se fornecido)
+    let partner = null;
+    if (referralCode && referralCode.trim()) {
+      logStep("Validating referral code", { referralCode });
+      
+      const { data: partnerData, error: partnerError } = await supabaseClient
+        .from('partners')
+        .select('*')
+        .eq('referral_code', referralCode.toUpperCase())
+        .eq('status', 'active')
+        .single();
+
+      if (partnerError) {
+        logStep("Invalid referral code", { referralCode, error: partnerError.message });
+        return new Response("Código de parceiro inválido", { status: 400, headers: corsHeaders });
+      }
+
+      partner = partnerData;
+      logStep("Partner found", { partnerId: partner.id, partnerName: partner.name });
+    }
+
     // USAR PREÇOS SEGUROS DO BACKEND
     const planConfig = PLAN_PRICES[planType as keyof typeof PLAN_PRICES];
     const amount = planConfig.amount;
@@ -131,23 +83,27 @@ serve(async (req) => {
       throw new Error("Stripe secret key não configurado");
     }
 
-    logStep("Initializing Stripe", { planType, amount: planConfig.amount, coupleName });
+    logStep("Initializing Stripe", { planType, amount: planConfig.amount, coupleName, hasPartner: !!partner });
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     // Gerar external_reference único
     const externalReference = `couple_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-    // Criar pagamento no banco de dados com os dados do formulário
+    // Criar pagamento no banco de dados com os dados do formulário e parceiro
+    const paymentData = {
+      amount: amount,
+      currency: 'brl',
+      status: 'pending',
+      plan_type: planType,
+      external_reference: externalReference,
+      form_data: formData,
+      partner_id: partner?.id || null,
+      referral_code: partner?.referral_code || null
+    };
+
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
-      .insert({
-        amount: amount,
-        currency: 'brl',
-        status: 'pending',
-        plan_type: planType,
-        external_reference: externalReference,
-        form_data: formData
-      })
+      .insert(paymentData)
       .select()
       .single();
 
@@ -156,10 +112,25 @@ serve(async (req) => {
       return new Response("Error creating payment", { status: 500, headers: corsHeaders });
     }
 
-    logStep("Payment created in database", { paymentId: payment.id });
+    logStep("Payment created in database", { paymentId: payment.id, partnerId: partner?.id });
 
-    // Criar sessão de checkout do Stripe
-    const session = await stripe.checkout.sessions.create({
+    // Calcular taxa de aplicação se houver parceiro
+    let applicationFeeAmount = 0;
+    if (partner) {
+      // A taxa de aplicação será o valor que FICA na plataforma
+      const commissionAmount = Math.round(amount * (partner.commission_percentage / 100));
+      applicationFeeAmount = amount - commissionAmount; // O que sobra para a plataforma
+      
+      logStep("Commission calculation", { 
+        totalAmount: amount, 
+        commissionPercentage: partner.commission_percentage,
+        commissionAmount: commissionAmount,
+        applicationFeeAmount: applicationFeeAmount
+      });
+    }
+
+    // Configurar parâmetros do Stripe baseado na presença de parceiro
+    const sessionParams: any = {
       line_items: [
         {
           price_data: {
@@ -179,10 +150,25 @@ serve(async (req) => {
       metadata: {
         payment_id: payment.id,
         external_reference: externalReference,
+        partner_id: partner?.id || '',
+        referral_code: partner?.referral_code || ''
       },
-    });
+    };
 
-    logStep("Stripe session created", { sessionId: session.id });
+    // Se houver parceiro e conta conectada, usar transferência direta
+    if (partner && partner.stripe_account_id) {
+      sessionParams.payment_intent_data = {
+        application_fee_amount: applicationFeeAmount,
+        transfer_data: {
+          destination: partner.stripe_account_id,
+        },
+      };
+    }
+
+    // Criar sessão de checkout do Stripe
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    logStep("Stripe session created", { sessionId: session.id, hasTransfer: !!(partner && partner.stripe_account_id) });
 
     // Atualizar pagamento com session_id do Stripe
     await supabaseClient
@@ -196,7 +182,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       payment_id: payment.id,
       session_id: session.id,
-      url: session.url
+      url: session.url,
+      partner_name: partner?.name || null
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
