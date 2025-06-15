@@ -22,30 +22,29 @@ const PlanSelector = ({
   const plans = [
     {
       id: 'basic',
-      name: 'Plano Memórias',
+      name: 'Memórias',
       price: pricing.basic,
-      originalPrice: hasCustomPricing ? 1990 : null, // Preço original se houver desconto
+      originalPrice: hasCustomPricing ? 1990 : null,
       features: [
-        'Contador personalizado',
+        'Contador de tempo personalizado',
         'Até 2 fotos do casal',
         'Mensagem especial',
-        'Design responsivo',
-        'Link personalizado'
+        'QR Code para compartilhar',
+        'Um ano de acesso'
       ]
     },
     {
       id: 'premium',
-      name: 'Plano Eternidade',
+      name: 'Eternidade',
       price: pricing.premium,
-      originalPrice: hasCustomPricing ? 2990 : null, // Preço original se houver desconto
+      originalPrice: hasCustomPricing ? 2990 : null,
       features: [
-        'Contador personalizado',
+        'Contador de tempo personalizado',
         'Até 5 fotos do casal',
         'Mensagem especial',
-        'Música de fundo (YouTube)',
-        'Design responsivo',
-        'Link personalizado',
-        '✨ Experiência premium'
+        'Música/vídeo de fundo',
+        'QR Code para compartilhar',
+        'Acesso permanente'
       ]
     }
   ];
@@ -53,7 +52,7 @@ const PlanSelector = ({
   return (
     <div>
       <label className="block text-sm font-medium text-text-secondary mb-3">
-        Escolha seu Plano
+        Escolha seu plano
         {hasCustomPricing && (
           <span className="ml-2 text-xs bg-neon-pink/20 text-neon-pink px-2 py-1 rounded-full">
             Preços Especiais!
@@ -66,7 +65,7 @@ const PlanSelector = ({
             key={plan.id}
             onClick={() => !disabled && onPlanSelect(plan.id)}
             className={`
-              relative p-4 sm:p-6 rounded-lg border-2 cursor-pointer transition-all duration-200
+              relative p-6 rounded-lg border-2 cursor-pointer transition-all duration-200
               ${selectedPlan === plan.id
                 ? 'border-neon-pink bg-neon-pink/10'
                 : 'border-gray-600 bg-gray-800/50 hover:border-gray-500'
@@ -74,31 +73,26 @@ const PlanSelector = ({
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
           >
-            {/* Premium Badge */}
-            {plan.id === 'premium' && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-gradient-to-r from-neon-pink to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  MAIS POPULAR
-                </span>
+            {/* Radio button indicator */}
+            <div className="absolute top-4 right-4">
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                selectedPlan === plan.id 
+                  ? 'border-neon-pink bg-neon-pink' 
+                  : 'border-gray-400'
+              }`}>
+                {selectedPlan === plan.id && (
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                )}
               </div>
-            )}
-
-            {/* Check Icon */}
-            {selectedPlan === plan.id && (
-              <div className="absolute top-4 right-4">
-                <div className="w-6 h-6 bg-neon-pink rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4 text-white" />
-                </div>
-              </div>
-            )}
+            </div>
 
             {/* Plan Info */}
             <div className="mb-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
+              <h3 className="text-xl font-semibold text-white mb-2">
                 {plan.name}
               </h3>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-bold text-neon-pink">
+                <span className="text-3xl font-bold text-neon-pink">
                   {formatPrice(plan.price)}
                 </span>
                 {plan.originalPrice && plan.originalPrice !== plan.price && (
