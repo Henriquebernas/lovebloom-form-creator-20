@@ -9,7 +9,142 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      couple_photos: {
+        Row: {
+          couple_id: string
+          created_at: string
+          file_name: string | null
+          file_size: number | null
+          id: string
+          photo_order: number
+          photo_url: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          photo_order: number
+          photo_url: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          photo_order?: number
+          photo_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_photos_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      couples: {
+        Row: {
+          couple_name: string
+          created_at: string
+          email: string
+          id: string
+          message: string | null
+          music_url: string | null
+          selected_plan: string
+          start_date: string
+          start_time: string | null
+          updated_at: string
+          url_slug: string
+        }
+        Insert: {
+          couple_name: string
+          created_at?: string
+          email: string
+          id?: string
+          message?: string | null
+          music_url?: string | null
+          selected_plan: string
+          start_date: string
+          start_time?: string | null
+          updated_at?: string
+          url_slug: string
+        }
+        Update: {
+          couple_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string | null
+          music_url?: string | null
+          selected_plan?: string
+          start_date?: string
+          start_time?: string | null
+          updated_at?: string
+          url_slug?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          couple_id: string | null
+          created_at: string
+          currency: string
+          external_reference: string | null
+          form_data: Json | null
+          id: string
+          payment_method: string | null
+          plan_type: string
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          couple_id?: string | null
+          created_at?: string
+          currency?: string
+          external_reference?: string | null
+          form_data?: Json | null
+          id?: string
+          payment_method?: string | null
+          plan_type: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          couple_id?: string | null
+          created_at?: string
+          currency?: string
+          external_reference?: string | null
+          form_data?: Json | null
+          id?: string
+          payment_method?: string | null
+          plan_type?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
