@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Partner } from '@/types/database';
+import { Partner, PartnerPricing } from '@/types/database';
 
 export const usePartners = () => {
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,32 @@ export const usePartners = () => {
     }
   }, []);
 
+  const getPartnerPricing = useCallback(async (partnerId: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('partner_pricing')
+        .select('*')
+        .eq('partner_id', partnerId)
+        .eq('is_active', true);
+
+      if (error) {
+        throw error;
+      }
+      
+      return data as PartnerPricing[];
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar preços do parceiro';
+      setError(errorMessage);
+      console.error('Erro ao buscar preços do parceiro:', err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const validateReferralCode = useCallback(async (referralCode: string): Promise<boolean> => {
     if (!referralCode || referralCode.trim().length === 0) {
       return false;
@@ -51,6 +77,7 @@ export const usePartners = () => {
     loading,
     error,
     getPartnerByReferralCode,
+    getPartnerPricing,
     validateReferralCode
   };
 };

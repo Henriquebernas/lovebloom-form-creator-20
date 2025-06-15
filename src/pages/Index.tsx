@@ -7,14 +7,23 @@ import PhotoUpload from '@/components/PhotoUpload';
 import PreviewCard from '@/components/PreviewCard';
 import Modal from '@/components/Modal';
 import EmailCaptureModal from '@/components/EmailCaptureModal';
+import PartnerBanner from '@/components/PartnerBanner';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { usePayments } from '@/hooks/usePayments';
+import { usePartnerContext } from '@/hooks/usePartnerContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { createPayment } = usePayments();
+  const { 
+    partner, 
+    pricing, 
+    hasCustomPricing, 
+    isLoading: partnerLoading, 
+    formatPrice 
+  } = usePartnerContext();
   
   const [formData, setFormData] = useState<FormData>({
     coupleName: '',
@@ -220,10 +229,10 @@ const Index = () => {
         })
       );
 
-      // SEGURANÇA: Não enviamos mais valores do frontend
       const result = await createPayment.mutateAsync({
         planType: formData.selectedPlan as 'basic' | 'premium',
         coupleName: formData.coupleName,
+        referralCode: partner?.referral_code, // Incluir código do parceiro se presente
         formData: {
           coupleName: formData.coupleName,
           startDate: formData.startDate,
@@ -264,6 +273,11 @@ const Index = () => {
             </h1>
             <p className="text-lg text-text-secondary mt-2">Celebre cada momento do seu amor.</p>
           </header>
+
+          {/* Partner Banner */}
+          {partner && (
+            <PartnerBanner partner={partner} hasCustomPricing={hasCustomPricing} />
+          )}
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Form Section */}
@@ -338,11 +352,14 @@ const Index = () => {
                   />
                 </div>
 
-                {/* Plans */}
+                {/* Plans with Dynamic Pricing */}
                 <PlanSelector 
                   selectedPlan={formData.selectedPlan}
                   onPlanSelect={handlePlanSelect}
-                  disabled={isCreating}
+                  disabled={isCreating || partnerLoading}
+                  pricing={pricing}
+                  formatPrice={formatPrice}
+                  hasCustomPricing={hasCustomPricing}
                 />
 
                 {/* Video URL - Only shown for premium plan */}
@@ -394,7 +411,7 @@ const Index = () => {
               <button
                 type="button"
                 onClick={handleCreateSiteClick}
-                disabled={isCreating}
+                disabled={isCreating || partnerLoading}
                 className="btn-primary w-full max-w-md mt-6 p-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreating ? 'Processando...' : 'Criar Nosso Site Personalizado'}

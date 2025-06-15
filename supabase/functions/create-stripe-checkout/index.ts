@@ -13,8 +13,8 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// DEFINIÇÃO SEGURA DOS PREÇOS NO BACKEND
-const PLAN_PRICES = {
+// DEFINIÇÃO SEGURA DOS PREÇOS PADRÃO NO BACKEND
+const DEFAULT_PLAN_PRICES = {
   basic: {
     amount: 1990, // R$ 19,90 em centavos
     name: 'Plano Memórias',
@@ -44,7 +44,7 @@ serve(async (req) => {
     const { planType, coupleName, formData, referralCode } = await req.json();
 
     // VALIDAÇÃO DE SEGURANÇA: Verificar se o plano é válido
-    if (!planType || !PLAN_PRICES[planType as keyof typeof PLAN_PRICES]) {
+    if (!planType || !DEFAULT_PLAN_PRICES[planType as keyof typeof DEFAULT_PLAN_PRICES]) {
       logStep("Invalid plan type", { planType });
       return new Response("Invalid plan type", { status: 400, headers: corsHeaders });
     }
@@ -55,6 +55,8 @@ serve(async (req) => {
 
     // Verificar se o código de parceiro é válido (se fornecido)
     let partner = null;
+    let customPricing = null;
+    
     if (referralCode && referralCode.trim()) {
       logStep("Validating referral code", { referralCode });
       
@@ -72,18 +74,43 @@ serve(async (req) => {
 
       partner = partnerData;
       logStep("Partner found", { partnerId: partner.id, partnerName: partner.name });
+
+      // Buscar preços personalizados do parceiro
+      const { data: pricingData, error: pricingError } = await supabaseClient
+        .from('partner_pricing')
+        .select('*')
+        .eq('partner_id', partner.id)
+        .eq('plan_type', planType)
+        .eq('is_active', true)
+        .single();
+
+      if (!pricingError && pricingData) {
+        customPricing = pricingData;
+        logStep("Custom pricing found", { 
+          planType, 
+          customPrice: customPricing.custom_price,
+          defaultPrice: DEFAULT_PLAN_PRICES[planType as keyof typeof DEFAULT_PLAN_PRICES].amount
+        });
+      }
     }
 
-    // USAR PREÇOS SEGUROS DO BACKEND
-    const planConfig = PLAN_PRICES[planType as keyof typeof PLAN_PRICES];
-    const amount = planConfig.amount;
+    // USAR PREÇOS PERSONALIZADOS OU PADRÃO
+    const planConfig = DEFAULT_PLAN_PRICES[planType as keyof typeof DEFAULT_PLAN_PRICES];
+    const amount = customPricing ? customPricing.custom_price : planConfig.amount;
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       throw new Error("Stripe secret key não configurado");
     }
 
-    logStep("Initializing Stripe", { planType, amount: planConfig.amount, coupleName, hasPartner: !!partner });
+    logStep("Initializing Stripe", { 
+      planType, 
+      amount, 
+      isCustomPricing: !!customPricing,
+      coupleName, 
+      hasPartner: !!partner 
+    });
+    
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     // Gerar external_reference único
@@ -151,7 +178,8 @@ serve(async (req) => {
         payment_id: payment.id,
         external_reference: externalReference,
         partner_id: partner?.id || '',
-        referral_code: partner?.referral_code || ''
+        referral_code: partner?.referral_code || '',
+        has_custom_pricing: customPricing ? 'true' : 'false'
       },
     };
 
@@ -168,7 +196,12 @@ serve(async (req) => {
     // Criar sessão de checkout do Stripe
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    logStep("Stripe session created", { sessionId: session.id, hasTransfer: !!(partner && partner.stripe_account_id) });
+    logStep("Stripe session created", { 
+      sessionId: session.id, 
+      hasTransfer: !!(partner && partner.stripe_account_id),
+      finalAmount: amount,
+      isCustomPricing: !!customPricing
+    });
 
     // Atualizar pagamento com session_id do Stripe
     await supabaseClient
@@ -183,7 +216,8 @@ serve(async (req) => {
       payment_id: payment.id,
       session_id: session.id,
       url: session.url,
-      partner_name: partner?.name || null
+      partner_name: partner?.name || null,
+      custom_pricing_applied: !!customPricing
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

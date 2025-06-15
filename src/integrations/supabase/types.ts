@@ -143,6 +143,44 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_pricing: {
+        Row: {
+          created_at: string
+          custom_price: number
+          id: string
+          is_active: boolean | null
+          partner_id: string
+          plan_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_price: number
+          id?: string
+          is_active?: boolean | null
+          partner_id: string
+          plan_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_price?: number
+          id?: string
+          is_active?: boolean | null
+          partner_id?: string
+          plan_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_pricing_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partners: {
         Row: {
           commission_percentage: number | null

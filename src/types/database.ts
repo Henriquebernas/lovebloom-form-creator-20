@@ -53,6 +53,16 @@ export interface Partner {
   updated_at: string;
 }
 
+export interface PartnerPricing {
+  id: string;
+  partner_id: string;
+  plan_type: 'basic' | 'premium';
+  custom_price: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Commission {
   id: string;
   partner_id: string;
@@ -64,4 +74,9 @@ export interface Commission {
   paid_at?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface PlanPricing {
+  basic: number;
+  premium: number;
 }
