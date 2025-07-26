@@ -36,6 +36,11 @@
 
     --radius: 0.5rem;
 
+    /* Custom LoveBloom colors */
+    --neon-pink: 330 100% 50%;
+    --text-secondary: 240 5% 65%;
+    --dark-bg: 240 20% 10%;
+
     --sidebar-background: 240 20% 10%;
     --sidebar-foreground: 240 5% 84%;
     --sidebar-primary: 330 100% 50%;
@@ -67,6 +72,12 @@
     --border: 240 20% 18%;
     --input: 240 20% 18%;
     --ring: 330 100% 50%;
+    
+    /* Custom LoveBloom colors */
+    --neon-pink: 330 100% 50%;
+    --text-secondary: 240 5% 65%;
+    --dark-bg: 240 20% 10%;
+    
     --sidebar-background: 240 20% 10%;
     --sidebar-foreground: 240 5% 84%;
     --sidebar-primary: 330 100% 50%;
@@ -95,27 +106,27 @@
   }
 
   .text-neon-pink {
-    color: var(--neon-pink);
+    @apply text-secondary;
   }
 
   .text-text-secondary {
-    color: var(--text-secondary);
+    @apply text-muted-foreground;
   }
 
   .bg-dark-bg {
-    background-color: var(--dark-bg);
+    @apply bg-background;
   }
 
   .bg-element-bg {
-    background-color: var(--element-bg);
+    @apply bg-card;
   }
 
   .bg-element-bg-lighter {
-    background-color: var(--element-bg-lighter);
+    @apply bg-accent;
   }
 
   .border-border-color {
-    border-color: var(--border-color);
+    @apply border-border;
   }
 
   .custom-shadow {
