@@ -36,11 +36,6 @@
 
     --radius: 0.5rem;
 
-    /* Custom LoveBloom colors */
-    --neon-pink: 330 100% 50%;
-    --text-secondary: 240 5% 65%;
-    --dark-bg: 240 20% 10%;
-
     --sidebar-background: 240 20% 10%;
     --sidebar-foreground: 240 5% 84%;
     --sidebar-primary: 330 100% 50%;
@@ -72,12 +67,6 @@
     --border: 240 20% 18%;
     --input: 240 20% 18%;
     --ring: 330 100% 50%;
-    
-    /* Custom LoveBloom colors */
-    --neon-pink: 330 100% 50%;
-    --text-secondary: 240 5% 65%;
-    --dark-bg: 240 20% 10%;
-    
     --sidebar-background: 240 20% 10%;
     --sidebar-foreground: 240 5% 84%;
     --sidebar-primary: 330 100% 50%;
@@ -106,27 +95,27 @@
   }
 
   .text-neon-pink {
-    @apply text-secondary;
+    color: var(--neon-pink);
   }
 
   .text-text-secondary {
-    @apply text-muted-foreground;
+    color: var(--text-secondary);
   }
 
   .bg-dark-bg {
-    @apply bg-background;
+    background-color: var(--dark-bg);
   }
 
   .bg-element-bg {
-    @apply bg-card;
+    background-color: var(--element-bg);
   }
 
   .bg-element-bg-lighter {
-    @apply bg-accent;
+    background-color: var(--element-bg-lighter);
   }
 
   .border-border-color {
-    @apply border-border;
+    border-color: var(--border-color);
   }
 
   .custom-shadow {
@@ -158,14 +147,15 @@
   }
 
   .input-field {
-    @apply bg-input text-foreground;
-    border: 1px solid hsl(var(--border));
+    background-color: var(--element-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
     border-radius: 0.5rem;
   }
 
   .input-field:focus {
-    @apply border-ring;
-    box-shadow: 0 0 0 0.2rem hsl(var(--ring) / 0.25);
+    border-color: var(--border-color-focus);
+    box-shadow: 0 0 0 0.2rem rgba(255, 0, 127, 0.25);
     outline: none;
   }
 
