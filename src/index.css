@@ -159,7 +159,7 @@
 
   .input-field {
     @apply bg-input text-foreground;
-    border: 1px solid hsl(var(--secondary));
+    border: 1px solid hsl(var(--border));
     border-radius: 0.5rem;
   }
 
