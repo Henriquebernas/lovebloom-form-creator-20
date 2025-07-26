@@ -158,7 +158,8 @@
   }
 
   .input-field {
-    @apply bg-input border border-border text-foreground;
+    @apply bg-input text-foreground;
+    border: 1px solid hsl(var(--secondary));
     border-radius: 0.5rem;
   }
 
