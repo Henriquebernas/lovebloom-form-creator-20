@@ -146,6 +146,116 @@ const Home = () => {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section className="py-16 sm:py-24 bg-card">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            {/* Left side - Title and description */}
+            <div>
+              <h2 className="text-4xl font-bold text-primary mb-6 playfair-display">
+                Perguntas <span className="text-secondary">Frequentes</span>
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Aqui você encontra respostas claras para qualquer dúvida que possa surgir. Afinal, queremos que sua experiência seja tranquila e emocionante desde o primeiro clique.
+              </p>
+            </div>
+
+            {/* Right side - FAQ Grid */}
+            <div className="grid gap-4">
+              {/* FAQ Item 1 */}
+              <div className="bg-background border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-300">
+                <details className="group">
+                  <summary className="flex justify-between items-center cursor-pointer font-semibold text-primary mb-2 list-none">
+                    <span>O que é o LoveBloom?</span>
+                    <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="text-muted-foreground mt-3">
+                    O LoveBloom é uma plataforma que permite a criação de páginas personalizadas para eternizar momentos especiais. Você pode adicionar fotos, mensagens, emojis e até música para criar uma experiência única.
+                  </p>
+                </details>
+              </div>
+
+              {/* FAQ Item 2 */}
+              <div className="bg-background border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-300">
+                <details className="group">
+                  <summary className="flex justify-between items-center cursor-pointer font-semibold text-primary mb-2 list-none">
+                    <span>Como posso criar uma página personalizada no LoveBloom?</span>
+                    <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="text-muted-foreground mt-3">
+                    Para criar sua página, preencha o formulário com os detalhes que deseja incluir, como título, imagens, mensagem especial, emojis e um contador, se desejar. Depois, finalize o pagamento e receba o link para acessar e compartilhar sua página.
+                  </p>
+                </details>
+              </div>
+
+              {/* FAQ Item 3 */}
+              <div className="bg-background border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-300">
+                <details className="group">
+                  <summary className="flex justify-between items-center cursor-pointer font-semibold text-primary mb-2 list-none">
+                    <span>O que está incluído na minha página personalizada?</span>
+                    <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="text-muted-foreground mt-3">
+                    Sua página personalizada pode incluir um título, imagens, mensagens, emojis, um contador e música de fundo. Você pode personalizar todos esses elementos para se adequar à ocasião.
+                  </p>
+                </details>
+              </div>
+
+              {/* FAQ Item 4 */}
+              <div className="bg-background border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-300">
+                <details className="group">
+                  <summary className="flex justify-between items-center cursor-pointer font-semibold text-primary mb-2 list-none">
+                    <span>Como recebo minha página personalizada após o pagamento?</span>
+                    <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="text-muted-foreground mt-3">
+                    Após a confirmação do pagamento, você receberá um link por e-mail para acessar sua página personalizada e um QR Code para compartilhar.
+                  </p>
+                </details>
+              </div>
+
+              {/* FAQ Item 5 */}
+              <div className="bg-background border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-300">
+                <details className="group">
+                  <summary className="flex justify-between items-center cursor-pointer font-semibold text-primary mb-2 list-none">
+                    <span>A página personalizada tem validade?</span>
+                    <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="text-muted-foreground mt-3">
+                    A validade da sua página pode variar conforme o plano escolhido. Verifique os detalhes do plano no momento da compra.
+                  </p>
+                </details>
+              </div>
+
+              {/* FAQ Item 6 */}
+              <div className="bg-background border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-300">
+                <details className="group">
+                  <summary className="flex justify-between items-center cursor-pointer font-semibold text-primary mb-2 list-none">
+                    <span>Qual é o custo para criar uma página no LoveBloom?</span>
+                    <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="text-muted-foreground mt-3">
+                    Os preços podem variar dependendo do plano e dos recursos adicionais que você escolher. Consulte a página de preços para obter mais informações.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-card border-t border-border text-muted-foreground py-12 text-center">
         <div className="container mx-auto px-6">
