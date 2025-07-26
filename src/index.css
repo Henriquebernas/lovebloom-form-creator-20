@@ -147,15 +147,13 @@
   }
 
   .input-field {
-    background-color: var(--element-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
+    @apply bg-input border border-border text-foreground;
     border-radius: 0.5rem;
   }
 
   .input-field:focus {
-    border-color: var(--border-color-focus);
-    box-shadow: 0 0 0 0.2rem rgba(255, 0, 127, 0.25);
+    @apply border-ring;
+    box-shadow: 0 0 0 0.2rem hsl(var(--ring) / 0.25);
     outline: none;
   }
 
