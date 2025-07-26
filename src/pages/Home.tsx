@@ -95,10 +95,10 @@ const Home = () => {
             Como <span className="text-secondary">Funciona?</span>
           </h2>
           <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Em apenas três passos simples você cria uma surpresa incrível.
+            Em apenas quatro passos simples você cria uma surpresa incrível.
           </p>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Step 1 */}
             <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-all duration-300 hover:-translate-y-2 group">
               <div className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
@@ -114,6 +114,17 @@ const Home = () => {
             <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-all duration-300 hover:-translate-y-2 group">
               <div className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20m5-5l-5 5-5-5" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-primary mb-3 playfair-display">Pague</h3>
+              <p className="text-muted-foreground">Escolha seu plano e faça o pagamento de forma segura e rápida.</p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-all duration-300 hover:-translate-y-2 group">
+              <div className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
               </div>
@@ -121,7 +132,7 @@ const Home = () => {
               <p className="text-muted-foreground">Envie o link exclusivo ou o QR Code para seu amor de forma fácil e rápida.</p>
             </div>
 
-            {/* Step 3 */}
+            {/* Step 4 */}
             <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-all duration-300 hover:-translate-y-2 group">
               <div className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
