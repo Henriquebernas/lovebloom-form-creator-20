@@ -219,7 +219,7 @@
     color: var(--text-primary);
     margin: 15% auto;
     padding: 25px;
-    border: 1px solid var(--neon-pink);
+    border: 1px solid hsl(310, 64%, 21%);
     width: 80%;
     max-width: 500px;
     border-radius: 10px;

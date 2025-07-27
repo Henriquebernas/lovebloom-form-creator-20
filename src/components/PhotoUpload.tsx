@@ -68,7 +68,7 @@ const PhotoUpload = ({
           />
           <button
             type="button"
-            className={`w-full btn-secondary p-3 rounded-lg font-medium flex items-center justify-center ${(!selectedPlan || disabled) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full btn-secondary p-3 rounded-lg font-medium flex items-center justify-center border border-border-color ${(!selectedPlan || disabled) ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!selectedPlan || disabled}
           >
             <Upload className="h-5 w-5 mr-2" />
