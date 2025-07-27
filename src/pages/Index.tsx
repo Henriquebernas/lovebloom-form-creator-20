@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Video } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FormData, ModalContent } from '@/types/index';
 import PlanSelector from '@/components/PlanSelector';
 import PhotoUpload from '@/components/PhotoUpload';
@@ -268,9 +268,11 @@ const Index = () => {
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-6xl mx-auto">
           <header className="text-center mb-8 sm:mb-12">
-            <h1 className="text-4xl sm:text-5xl playfair-display font-bold text-white">
-              Love<span className="text-neon-pink">Bloom</span>
-            </h1>
+            <Link to="/" className="inline-block">
+              <h1 className="text-4xl sm:text-5xl playfair-display font-bold text-white hover:opacity-80 transition-opacity cursor-pointer">
+                Love<span className="text-neon-pink">Bloom</span>
+              </h1>
+            </Link>
             <p className="text-lg text-text-secondary mt-2">Celebre cada momento do seu amor.</p>
           </header>
 
