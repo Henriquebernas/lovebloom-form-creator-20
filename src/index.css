@@ -214,8 +214,7 @@
   }
 
   .modal-content {
-    background-color: var(--element-bg);
-    color: var(--text-primary);
+    @apply bg-card text-foreground;
     margin: 15% auto;
     padding: 25px;
     border: 1px solid hsl(310, 64%, 21%);
@@ -223,7 +222,7 @@
     max-width: 500px;
     border-radius: 10px;
     text-align: center;
-    box-shadow: 0 0 20px var(--soft-pink-glow);
+    box-shadow: 0 0 20px rgba(255, 0, 127, 0.3);
   }
 
   /* Date and time picker styling */
