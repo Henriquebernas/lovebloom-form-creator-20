@@ -194,7 +194,7 @@
   }
 
   .preview-header {
-    background-color: var(--neon-pink);
+    @apply bg-secondary;
   }
 
   .preview-countdown-bg {
