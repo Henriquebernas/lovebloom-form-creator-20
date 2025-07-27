@@ -146,15 +146,14 @@
   }
 
   .btn-secondary {
-    background-color: var(--element-bg);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    @apply bg-card text-foreground;
+    border: 1px solid hsl(310, 64%, 21%);
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 
   .btn-secondary:hover {
-    background-color: var(--element-bg-lighter);
-    border-color: var(--neon-pink);
+    @apply bg-accent;
+    border-color: hsl(var(--secondary));
   }
 
   .input-field {
